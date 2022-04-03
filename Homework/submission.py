@@ -102,7 +102,7 @@ def mutate_sentences(sentence: str) -> List[str]:
         current_sentence = list()
         dfs(subset_of_all_sentences, current_sentence, word_dict, key, 0, MAX_LENGTH)
         all_sentences.append(subset_of_all_sentences)
-    all_sentences = sum(all_sentences, [])  # Flatten nested list
+    all_sentences = set(sum(all_sentences, []))  # Flatten nested list and return unique
 
     return all_sentences
     # END_YOUR_CODE
