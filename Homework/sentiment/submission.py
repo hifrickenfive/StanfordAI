@@ -2,7 +2,7 @@
 
 import random
 from typing import Callable, Dict, List, Tuple, TypeVar
-from collections import Counter
+from collections import Counter, defaultdict
 
 from sympy import numbered_symbols
 from util import *
@@ -71,10 +71,11 @@ def learnPredictor(trainExamples: List[Tuple[T, int]],
     def predictClass(x):
         featureVector = featureExtractor(x)
         score = dotProduct(weights, featureVector)
-        if score < 0:
-            return -1
+        if score >= 0:
+            predictedClass = 1
         else:
-            return 1
+            predictedClass = -1
+        return predictedClass
 
     for i in range(numEpochs):
         for item in trainExamples:
@@ -111,7 +112,16 @@ def generateDataset(numExamples: int, weights: WeightVector) -> List[Example]:
     # Note that the weight vector can be arbitrary during testing.
     def generateExample() -> Tuple[Dict[str, int], int]:
         # BEGIN_YOUR_CODE (our solution is 3 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        phi = dict()
+        for i in range(random.randint(1, len(weights))):
+            randomKey = random.choice(list(weights.keys()))
+            phi[randomKey] =  random.randint(1, 100)
+
+        score = dotProduct(phi, weights)
+        if score >= 0:
+            y = 1
+        else:
+            y = -1
         # END_YOUR_CODE
         return phi, y
 
@@ -131,7 +141,13 @@ def extractCharacterFeatures(n: int) -> Callable[[str], FeatureVector]:
     '''
     def extract(x: str) -> Dict[str, int]:
         # BEGIN_YOUR_CODE (our solution is 6 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        newString = x.replace(" ", "")
+        nGrams = defaultdict(int)
+        for index in range(0, len(newString)):
+            nLetterWord = newString[index:index+n]
+            if len(nLetterWord) == n:
+                nGrams[nLetterWord] += 1 
+        return nGrams
         # END_YOUR_CODE
 
     return extract
@@ -166,7 +182,8 @@ def testValuesOfN(n: int):
         (1 if dotProduct(featureExtractor(x), weights) >= 0 else -1))
     print(("Official: train error = %s, validation error = %s" %
            (trainError, validationError)))
-
+    
+    return validationError
 
 ############################################################
 # Problem 5: k-means
