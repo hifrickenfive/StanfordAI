@@ -246,10 +246,13 @@ def kmeans(examples: List[Dict[str, float]], K: int,
         
         return sum
     
+    def euclideanDistance(v1, v2, v1_square, v2_square):
+        return v1_square + v2_square - 2 * dotProduct(v1, v2)
+
+
     random.seed(4)
-    centroidList = list()
-    for i in range(K):
-        centroidList.append(random.choice(examples))
+    centroidList = random.sample(examples, K)
+    ele_squares = [dotProduct(ele, ele) for ele in examples]
 
     for i in range(maxEpochs):
         print(f'================ Starting Epoch {i} ================')
@@ -258,6 +261,8 @@ def kmeans(examples: List[Dict[str, float]], K: int,
         finalLoss = dict.fromkeys(range(len(examples)), None)
         clusterSum = dict.fromkeys(range(len(centroidList)), None)
         clusterCounts = dict.fromkeys(range(len(centroidList)), 0)
+
+        c_squares = [dotProduct(c, c) for c in centroidList]
 
         prevCentroidList = centroidList.copy()
         for featureID, featureVector in enumerate(examples):
@@ -268,7 +273,7 @@ def kmeans(examples: List[Dict[str, float]], K: int,
 
             # Evaluate the distances from current featureVector to each centroid
             for centroidID, centroidVector in enumerate(centroidList):
-                currentDistSq = distSquared(featureVector, centroidVector)
+                currentDistSq = euclideanDistance(featureVector, centroidVector, ele_squares[featureID], c_squares[centroidID])
                 if currentDistSq < lowestDistSq:
                     assignedClusterID = centroidID
                     lowestDistSq = currentDistSq
