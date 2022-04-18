@@ -189,8 +189,8 @@ def testValuesOfN(n: int):
 # Problem 5: k-means
 ############################################################
 
-
-
+import random
+import math
 
 def kmeans(examples: List[Dict[str, float]], K: int,
            maxEpochs: int) -> Tuple[List, List, float]:
@@ -203,5 +203,112 @@ def kmeans(examples: List[Dict[str, float]], K: int,
             final reconstruction loss)
     '''
     # BEGIN_YOUR_CODE (our solution is 28 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+
+    def AddSparseVectors(d1:dict, d2:dict) -> dict:
+        """
+        @param dict d1: a feature vector represented by a mapping from a feature (string) to a weight (float).
+        @param dict d2: same as d1
+        @return float: the squared euclidean distance between d1 and d2
+        """
+        if d1 == None:
+            return d2
+        if d2 == None:
+            return d1
+        
+        if len(d1) < len(d2):
+            return AddSparseVectors(d2, d1)
+        else:
+            d1Copy = d1.copy() # To not mutate features
+            for key, value in d2.items():
+                if key not in d1.keys():
+                    d1Copy.update({key: value})
+                else:
+                    d1Copy[key] += value
+            return d1Copy
+
+    def distSquared(d1: Dict, d2: Dict) -> float:
+        """
+        @param dict d1: a feature vector represented by a mapping from a feature (string) to a weight (float).
+        @param dict d2: same as d1
+        @return float: the squared euclidean distance between d1 and d2
+        """
+        # Three cases:  (delta of commons keys)^2 + (d1 uniques)^2 + (d2 uniques)^2
+        sum = 0
+
+        for key in d1.keys() & d2.keys():
+            sum += (d1[key] - d2[key])**2
+        
+        for key in d1.keys() - d2.keys():
+            sum += (d1[key])**2
+
+        for key in d2.keys() - d1.keys():
+            sum += (d2[key])**2
+        
+        return sum
+    
+    random.seed(4)
+    centroidList = list()
+    for i in range(K):
+        centroidList.append(random.choice(examples))
+
+    for i in range(maxEpochs):
+        print(f'================ Starting Epoch {i} ================')
+        # Initialise dictionaries
+        data2cluster = dict.fromkeys(range(len(examples)), None)
+        finalLoss = dict.fromkeys(range(len(examples)), None)
+        clusterSum = dict.fromkeys(range(len(centroidList)), None)
+        clusterCounts = dict.fromkeys(range(len(centroidList)), 0)
+        # print(f'Dataset: {examples}')
+        # print(data2cluster, clusterSum, clusterCounts)
+        # print('\n')
+
+        for featureID, featureVector in enumerate(examples):
+            # print(f'Processing Data point {featureID}')
+
+            # Initialise default cluster assignment
+            assignedClusterID = 0
+            lowestDistSq = math.inf
+
+            # Evaluate the distances from current featureVector to each centroid
+            for centroidID, centroidVector in enumerate(centroidList):
+                # print(f'    centroidID: {centroidID}, centroidVector = {centroidVector}')
+                currentDistSq = distSquared(featureVector, centroidVector)
+                # print(f'    Current Distance Squared: {currentDistSq}')
+                if currentDistSq < lowestDistSq:
+                    assignedClusterID = centroidID
+                    lowestDistSq = currentDistSq
+
+            # Associate the current featureVector to its closest centroid
+            # print(f'    assignedClusterID: {assignedClusterID}')
+            data2cluster[featureID] = assignedClusterID
+            finalLoss[featureID] = lowestDistSq
+
+            # Update that cluster's sum and counts
+            currentSum = clusterSum[assignedClusterID]
+            # print(f'    current sum for cluster: {assignedClusterID}: {clusterSum[assignedClusterID]}')
+            clusterSum[assignedClusterID] = AddSparseVectors(featureVector, currentSum)
+            # print(f'    updated sum for cluster: {assignedClusterID}: {clusterSum[assignedClusterID]}')
+            clusterCounts[assignedClusterID] += 1
+            # print('\n')
+
+        # print(f'Results from epoch')
+        # print(f'    Each datapoints assigned cluster: {data2cluster}')
+        # print(f'    Each clusters\' total sum: {clusterSum}')
+        # print(f'    Each clusters\' total count: {clusterCounts}')
+        # print('\n')
+
+        # Update centroids
+        # print(f'Update Centroids')
+        for centroidID, centroidVector in enumerate(centroidList):
+            # print(f'    Cluster Sum: {clusterSum[centroidID]}')
+            # print(f'    Cluster count: {clusterCounts[centroidID]}')
+            for key, value in clusterSum[centroidID].items():
+                centroidVector[key] = value / clusterCounts[centroidID]
+        #     print(f'        Updated centroidVector = {centroidVector}')
+        #     print('\n')
+
+        # print(f'Final centroids: {centroidList}')
+        # print('\n')
+    return [centroidList, data2cluster, sum(v for k, v in finalLoss.items())]
+
     # END_YOUR_CODE
