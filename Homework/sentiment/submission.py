@@ -1,10 +1,6 @@
-#!/usr/bin/python
-
 import random
 from typing import Callable, Dict, List, Tuple, TypeVar
 from collections import Counter, defaultdict
-
-from sympy import numbered_symbols
 from util import *
 
 FeatureVector = Dict[str, int]
@@ -206,9 +202,8 @@ def kmeans(examples: List[Dict[str, float]], K: int,
 
     def AddSparseVectors(d1:dict, d2:dict) -> dict:
         """
-        @param dict d1: a feature vector represented by a mapping from a feature (string) to a weight (float).
-        @param dict d2: same as d1
-        @return float: the squared euclidean distance between d1 and d2
+        @param dict d1: a sparse vector
+        @param dict d2: another sparse vector
         """
         if d1 == None:
             return d2
@@ -225,55 +220,44 @@ def kmeans(examples: List[Dict[str, float]], K: int,
                 else:
                     d1Copy[key] += value
             return d1Copy
-
-    def distSquared(d1: Dict, d2: Dict) -> float:
-        """
-        @param dict d1: a feature vector represented by a mapping from a feature (string) to a weight (float).
-        @param dict d2: same as d1
-        @return float: the squared euclidean distance between d1 and d2
-        """
-        # Three cases:  (delta of commons keys)^2 + (d1 uniques)^2 + (d2 uniques)^2
-        sum = 0
-
-        for key in d1.keys() & d2.keys():
-            sum += (d1[key] - d2[key])**2
-        
-        for key in d1.keys() - d2.keys():
-            sum += (d1[key])**2
-
-        for key in d2.keys() - d1.keys():
-            sum += (d2[key])**2
-        
-        return sum
     
-    def euclideanDistance(v1, v2, v1_square, v2_square):
-        return v1_square + v2_square - 2 * dotProduct(v1, v2)
+    def EvalDistSquared(d1, d2, d1_squared, d2_squared)-> float:
+        """
+        @param dict d1: a sparse vector
+        @param dict d2: another sparse vector
+        """
+        return d1_squared + d2_squared - 2*dotProduct(d1, d2)
 
-
+    # Randomly assign cluster locations based on the data
     random.seed(4)
     centroidList = random.sample(examples, K)
-    ele_squares = [dotProduct(ele, ele) for ele in examples]
+
+    # Pre-compute for EvalDistSquared
+    featuresSquared = [dotProduct(ele, ele) for ele in examples]
 
     for i in range(maxEpochs):
         print(f'================ Starting Epoch {i} ================')
-        # Initialise dictionaries
+        # Initialise empty dictionaries
         data2cluster = dict.fromkeys(range(len(examples)), None)
         finalLoss = dict.fromkeys(range(len(examples)), None)
         clusterSum = dict.fromkeys(range(len(centroidList)), None)
         clusterCounts = dict.fromkeys(range(len(centroidList)), 0)
 
-        c_squares = [dotProduct(c, c) for c in centroidList]
+        # Compute for EvalDistSquared
+        centroidsSquared = [dotProduct(c, c) for c in centroidList]
 
+        # Remember previous centroidList for early termination condition
         prevCentroidList = centroidList.copy()
+
         for featureID, featureVector in enumerate(examples):
 
             # Initialise default cluster assignment
             assignedClusterID = 0
             lowestDistSq = math.inf
 
-            # Evaluate the distances from current featureVector to each centroid
+            # Evaluate the squared distances from current featureVector to each centroid
             for centroidID, centroidVector in enumerate(centroidList):
-                currentDistSq = euclideanDistance(featureVector, centroidVector, ele_squares[featureID], c_squares[centroidID])
+                currentDistSq = EvalDistSquared(featureVector, centroidVector, featuresSquared[featureID], centroidsSquared[centroidID])
                 if currentDistSq < lowestDistSq:
                     assignedClusterID = centroidID
                     lowestDistSq = currentDistSq
@@ -287,13 +271,16 @@ def kmeans(examples: List[Dict[str, float]], K: int,
             clusterSum[assignedClusterID] = AddSparseVectors(featureVector, currentSum)
             clusterCounts[assignedClusterID] += 1
 
+        # Re-evaluate centroids
         newCentroidList = []
         for idx, centroidDict in enumerate(centroidList):
             newDict = {k: v/clusterCounts[idx] for k, v in clusterSum[idx].items()}
             newCentroidList.append(newDict)
         centroidList = newCentroidList
 
+        # Early terminate
         if prevCentroidList == centroidList:
             break
+
     return [centroidList, data2cluster, sum(v for k, v in finalLoss.items())]
     # END_YOUR_CODE
