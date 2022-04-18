@@ -258,12 +258,8 @@ def kmeans(examples: List[Dict[str, float]], K: int,
         finalLoss = dict.fromkeys(range(len(examples)), None)
         clusterSum = dict.fromkeys(range(len(centroidList)), None)
         clusterCounts = dict.fromkeys(range(len(centroidList)), 0)
-        # print(f'Dataset: {examples}')
-        # print(data2cluster, clusterSum, clusterCounts)
-        # print('\n')
 
         for featureID, featureVector in enumerate(examples):
-            # print(f'Processing Data point {featureID}')
 
             # Initialise default cluster assignment
             assignedClusterID = 0
@@ -271,44 +267,25 @@ def kmeans(examples: List[Dict[str, float]], K: int,
 
             # Evaluate the distances from current featureVector to each centroid
             for centroidID, centroidVector in enumerate(centroidList):
-                # print(f'    centroidID: {centroidID}, centroidVector = {centroidVector}')
                 currentDistSq = distSquared(featureVector, centroidVector)
-                # print(f'    Current Distance Squared: {currentDistSq}')
                 if currentDistSq < lowestDistSq:
                     assignedClusterID = centroidID
                     lowestDistSq = currentDistSq
 
             # Associate the current featureVector to its closest centroid
-            # print(f'    assignedClusterID: {assignedClusterID}')
             data2cluster[featureID] = assignedClusterID
             finalLoss[featureID] = lowestDistSq
 
             # Update that cluster's sum and counts
             currentSum = clusterSum[assignedClusterID]
-            # print(f'    current sum for cluster: {assignedClusterID}: {clusterSum[assignedClusterID]}')
             clusterSum[assignedClusterID] = AddSparseVectors(featureVector, currentSum)
-            # print(f'    updated sum for cluster: {assignedClusterID}: {clusterSum[assignedClusterID]}')
             clusterCounts[assignedClusterID] += 1
-            # print('\n')
 
-        # print(f'Results from epoch')
-        # print(f'    Each datapoints assigned cluster: {data2cluster}')
-        # print(f'    Each clusters\' total sum: {clusterSum}')
-        # print(f'    Each clusters\' total count: {clusterCounts}')
-        # print('\n')
+        newCentroidList = []
+        for idx, centroidDict in enumerate(centroidList):
+            newDict = {k: v/clusterCounts[idx] for k, v in clusterSum[idx].items()}
+            newCentroidList.append(newDict)
+        centroidList = newCentroidList
 
-        # Update centroids
-        # print(f'Update Centroids')
-        for centroidID, centroidVector in enumerate(centroidList):
-            # print(f'    Cluster Sum: {clusterSum[centroidID]}')
-            # print(f'    Cluster count: {clusterCounts[centroidID]}')
-            for key, value in clusterSum[centroidID].items():
-                centroidVector[key] = value / clusterCounts[centroidID]
-        #     print(f'        Updated centroidVector = {centroidVector}')
-        #     print('\n')
-
-        # print(f'Final centroids: {centroidList}')
-        # print('\n')
     return [centroidList, data2cluster, sum(v for k, v in finalLoss.items())]
-
     # END_YOUR_CODE

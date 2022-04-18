@@ -145,8 +145,8 @@ def kmeans(examples, K, maxEpochs):
         # print(f' New Assignments: {data2cluster}, Loss: {totalLoss}')
         # print(f' New centroids: {centroidList}')
 
-      
-    return [centroidList, data2cluster, sum(v for k, v in finalLoss.items())]
+    if i == maxEpochs or centroidList == centroidList:
+        return [centroidList, data2cluster, sum(v for k, v in finalLoss.items())]
 
 
 random.seed(42)
