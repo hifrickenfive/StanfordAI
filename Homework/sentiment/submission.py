@@ -259,6 +259,7 @@ def kmeans(examples: List[Dict[str, float]], K: int,
         clusterSum = dict.fromkeys(range(len(centroidList)), None)
         clusterCounts = dict.fromkeys(range(len(centroidList)), 0)
 
+        prevCentroidList = centroidList.copy()
         for featureID, featureVector in enumerate(examples):
 
             # Initialise default cluster assignment
@@ -287,5 +288,7 @@ def kmeans(examples: List[Dict[str, float]], K: int,
             newCentroidList.append(newDict)
         centroidList = newCentroidList
 
+        if prevCentroidList == centroidList:
+            break
     return [centroidList, data2cluster, sum(v for k, v in finalLoss.items())]
     # END_YOUR_CODE
