@@ -1,0 +1,1629 @@
+//nonlinear features
+G = sfig.serverSide ? global : this;
+G.prez = presentation();
+
+
+add(slide('Roadmap',
+          parentCenter(group(bold('Topics in the lecture:'), [
+              red('Nonlinear features'),
+              'Feature templates',
+	      'Neural networks',
+	      'Backpropagation',
+          ])).margin(100, 60).center()
+         ));
+
+prose(
+    'In this lecture, we are going to cover four topics: non-linear features, which are ways to use linear models to create nonlinear predictors.',_,
+    'We will then follow this up with feature templates, which are flexible ways of defining features',_,
+    'These two topics tell us how to hand-craft features to make linear models more effective',_,
+    'We will then follow this up with neural nets, which give the possibility of automatically learning these features from data',_,
+    'Training these can be difficult, and we will end by discussing backpropataion, which makes this possible',
+)
+
+
+add(slide('Linear regression',
+  parentCenter(xtable(
+    xtable(
+      ytable(
+        terminology('training data'),
+        kiwiDataTable(),
+      ).center().margin(5).atomicMouseShowHide(true),
+      withTop(
+        rightArrow(200).strokeWidth(5),
+        terminology('learning algorithm'),
+      ).atomicMouseShowHide(true),
+      ytable(
+        testColorFunc(3),
+        downArrow(30).strokeWidth(2),
+        withRight(
+          frameBox('$\\red{f}$'),
+          terminology('predictor'),
+        ).atomicMouseShowHide(true),
+        downArrow(30).strokeWidth(2),
+        testColorFunc(kiwiBestF(3)),
+      ).center().margin(3).atomicMouseShowHide(true),
+    ).center().margin(10).scale(0.8),
+    ytable(
+      'Which predictors are possible?',
+      bluebold('Hypothesis class'),
+    ),
+  ).center().margin(120)),
+  parentCenter(xtable(
+    text('$\\sF = \\{ f_\\w(x) = \\w \\cdot \\phi(x) : \\w \\in \\R^d \\}$').atomicMouseShowHide(false),
+  ).margin(50)),
+  parentCenter(xtable(
+    ytable(
+      '$\\phi(x) = [1, x]$',
+      `$f(x) = \\bestColor{${kiwiBestW}} \\cdot \\phi(x)$`,
+      `$f(x) = \\altColor{${kiwiAltW}} \\cdot \\phi(x)$`,
+    ).margin(20).scale(0.7),
+    kiwiGraph({bestF: true, altF: true}).scale(0.7),
+  ).center().margin(100)),
+));
+
+prose(
+  'We will look at regression and later turn to classification.',
+  _,
+    'Last week we defined linear regression as a procedure which takes training data',
+    'and produces a predictor that maps new inputs to new outputs.',
+    _,
+    'We discussed three parts to this problem, and the first one was the hypothesis class.',
+    'This is the set of possible predictors for the learning problem',
+  _,
+  'For linear predictors,',
+  ' the hypothesis class is the set of predictors',
+  'that map some input $x$ to the dot product between some weight vector $\\w$',
+  'and the feature vector $\\phi(x)$.',
+  _,
+  'As a simple example,',
+  'if we define the feature extractor to be $\\phi(x) = [1, x]$,',
+  'then we can define various linear predictors with different intercepts and slopes.',
+);
+
+add(slide('More complex data',
+  parentCenter(kiwiGraph({complexData: true})).atomicMouseShowHide(true),
+  modulebox('How do we fit a non-linear predictor?'),
+));
+
+prose(
+  'But sometimes data might be more complex and',
+  'not be easily fit by a linear predictor.',
+  'In this case, what can we do?',
+  _,
+  'One immediate reaction might be to go to something fancier',
+  'like neural networks or decision trees.',
+  _,
+  'But let\'s see how far we can get with the machinery of linear predictors first.',
+);
+
+add(slide('Quadratic predictors',
+  nil(),
+  parentCenter('$\\phi(x) = [1, x, x^2]$').scale(0.8).atomicMouseShowHide(false),
+  parentCenter('Example: $\\phi(3) = [1, 3, 9]$').scale(0.6),
+  parentCenter(xtable(
+    ytable(
+      `$f(x) = \\bestColor{${kiwiSquared1.wstr}} \\cdot \\phi(x)$`,
+      `$f(x) = \\altColor{${kiwiSquared2.wstr}} \\cdot \\phi(x)$`,
+      `$f(x) = \\altTwoColor{${kiwiSquared3.wstr}} \\cdot \\phi(x)$`,
+      '$\\sF = \\{ f_\\w(x) = \\w \\cdot \\phi(x) : \\w \\in \\R^3 \\}$',
+    ).margin(20).scale(0.7),
+    kiwiGraph({squaredF: true}).scale(0.7),
+  ).center().margin(100)),
+  modulebox('Non-linear predictors just by changing $\\phi$'),
+));
+
+prose(
+    'A linear model takes some input and makes a prediction that is linear in its inputs.',
+    'But there is no rule saying that we cannot non-linearly transform the input data first.',_,
+    'This is going to be the key starting observation -- the feature extractor $\\phi$ can be arbitrary',
+    _,
+    'As an example, if we wanted to fit a quadratic function, we can augment $\\phi$ by a $x^2$ term.',
+  _,
+  'Now, by setting the weights appropriately,',
+  'we can define a non-linear (specifically, a <b>quadratic</b>) predictor.',
+  _,
+  'Note that by setting the weight for feature $x^2$ to zero,',
+  'we recover linear predictors.',
+  _,
+  'Again, the hypothesis class is the set of all predictors $f_\\w$ obtained by varying $\\w$.',
+  _,
+  'Note that the hypothesis class of quadratic predictors is a <b>superset</b> of the hypothesis class of linear predictors.',
+  _,
+  'In summary, we\'ve seen our first example of obtaining non-linear predictors just by changing the feature extractor $\\phi$!',
+  _,
+  'Advanced: try thinking about how to use this idea to learn two- or even three- dimensional quadratics. What new challenges arise?',
+);
+
+add(slide('Piecewise constant predictors',
+  nil(),
+  parentCenter('$\\phi(x) = [\\1[0 < x \\le 1], \\1[1 < x \\le 2], \\1[2 < x \\le 3], \\1[3 < x \\le 4], \\1[4 < x \\le 5] ]$').scale(0.8).atomicMouseShowHide(false),
+  parentCenter('Example: $\\phi(2.3) = [0, 0, 1, 0, 0]$').scale(0.6),
+  parentCenter(xtable(
+    ytable(
+      `$f(x) = \\bestColor{${kiwiHist1.wstr}} \\cdot \\phi(x)$`,
+      `$f(x) = \\altColor{${kiwiHist2.wstr}} \\cdot \\phi(x)$`,
+      '$\\sF = \\{ f_\\w(x) = \\w \\cdot \\phi(x) : \\w \\in \\R^5 \\}$',
+    ).margin(20).scale(0.7),
+    kiwiGraph({histF: true}).scale(0.7),
+  ).center().margin(100)),
+  modulebox('Expressive non-linear predictors by partitioning the input space'),
+));
+
+prose(
+  'Quadratic predictors are still a bit restricted: they can only go up and then down smoothly (or vice-vera).',
+  _,
+  'We introduce another type of feature extractor which divides the input space into regions and allows the predicted value of each region to vary independently,',
+  'yielding piecewise constant predictors (see figure).',
+  _,
+  'Specifically, each component of the feature vector corresponds to one region (e.g., $[0, 1)$) and is 1 if $x$ lies in that region and $0$ otherwise.',
+  _,
+  'Assuming the regions are disjoint, the weight associated with a component/region is exactly the predicted value.',
+  _,
+  'As you make the regions smaller, then you have more features, and the expressivity of your hypothesis class increases.',
+  'In the limit, you can essentially capture any predictor you want.',
+  _,
+    'The drawback is that you need alot of training data to learn these predictors -- doing this trick in d-dimensions, your sample requirements go up exponentially in the dimension!',
+);
+
+add(slide('Predictors with periodicity structure',
+  nil(),
+  parentCenter('$\\phi(x) = [1, x, x^2, \\cos (3x)]$').scale(0.8).atomicMouseShowHide(false),
+  parentCenter('Example: $\\phi(2) = [1, 2, 4, 0.96]$').scale(0.6),
+  parentCenter(xtable(
+    ytable(
+      `$f(x) = \\bestColor{${kiwiCombo1.wstr}} \\cdot \\phi(x)$`,
+      `$f(x) = \\altColor{${kiwiCombo2.wstr}} \\cdot \\phi(x)$`,
+      '$\\sF = \\{ f_\\w(x) = \\w \\cdot \\phi(x) : \\w \\in \\R^4 \\}$',
+    ).margin(20).scale(0.7),
+    kiwiGraph({comboF: true}).scale(0.7),
+  ).center().margin(100)),
+  modulebox('Just throw in any features you want'),
+));
+
+prose(
+  'Quadratic and piecewise constant predictors are just two examples of',
+  'an unboundedly large design space of possible feature extractors.',
+  _,
+  'Generally, the choice of features is informed by the prediction task',
+  'that we wish to solve (either prior knowledge or preliminary data exploration).',
+  _,
+  'For example, if $x$ represents time and we believe the true output $y$ varies according to some periodic structure',
+  '(e.g., traffic patterns repeat daily, sales patterns repeat annually),',
+  'then we might use periodic features such as cosine to capture these trends.',
+  _,
+  'Each feature might represent some type of structure in the data.',
+  'If we have multiple types of structures, these can just be "thrown in" into the feature vector.',
+  _,
+  'Features represent what properties <b>might</b> be useful for prediction.',
+  'If a feature is not useful, then the learning algorithm can assign a weight close to zero to that feature.',
+  'Of course, the more features one has, the harder learning becomes.',
+);
+
+add(slide('Linear in what?',
+  stmt('Prediction'),
+  parentCenter('$f_\\w(x) = \\w \\cdot \\phi(x)$'),
+  indent(table(
+    ['Linear in $\\w$?', blue('Yes')],
+    ['Linear in $\\phi(x)$?', blue('Yes')],
+    ['Linear in $x$?', red('No!')],
+  ).margin(30, 0)),
+  keyIdea('non-linearity',
+    bulletedText('Expressivity: score $\\w \\cdot \\phi(x)$ can be a '+redbold('non-linear')+' function of $x$'),
+    bulletedText('Efficiency: score $\\w \\cdot \\phi(x)$ always a '+bluebold('linear')+' function of $\\w$'),
+  ),
+).rightHeader(image('images/vase-face-illusion.jpg').width(150)));
+
+prose(
+  'Wait a minute...how are we able to obtain non-linear predictors if we\'re still using the machinery of linear predictors?',
+    'Think of this like pre-processing: the feature map $\phi$ is a way of transforming the data so that it is linear',
+  _,
+  'The score $\\w \\cdot \\phi(x)$ is linear in $\\w$ and $\\phi(x)$.',
+  'However, the score is not linear in $x$',
+    '(it might not even make sense because $x$ need not be a vector at all. In NLP, x is often a piece of text).',
+    _,
+    'Adding more features will generally make the prediction problem more linear, but this comes at the cost of learning. We have to learn more weights in the linear regression, which will require larger datasets',
+    _,
+    'The machinery of non-linear features combines the benefits of linear models -- like its simplicity and ease of optimization, with those of more complex models that capture nonlinear relations.',
+);
+
+add(slide('Linear classification',
+  nil(),
+  parentCenter(xtable(
+    ytable(
+      '$\\phi(x) = [x_1, x_2]$',
+      `$f(x) = \\sign(\\bestColor{${mangoBestW}} \\cdot \\phi(x))$`,
+    ),
+    mangoGraph({bestF: true}),
+  ).margin(100)),
+  modulebox('Decision boundary is a line'),
+));
+
+prose(
+  'Now let\'s turn from regression to classification.',
+  _,
+  'The story is pretty much the same:',
+  'you can define arbitrary features to yield non-linear classifiers.',
+  _,
+  'Recall that in binary classification, the classifier (predictor) returns the sign of the score.',
+  _,
+  'The classifier can be therefore be represented by its decision boundary, which divides the input space into two regions:',
+  'points with positive score and points with negative score.',
+  _,
+  'Note that the classifier $f_\\w(x)$ is a non-linear function of $x$ (and $\\phi(x)$) no matter what (due to the sign function),',
+  'so it is not helpful to talk about whether $f_\\w$ is linear or non-linear.',
+  'Instead we will ask whether the <b>decision boundary</b> corresponding to $f_\\w$ is linear or not.',
+);
+
+add(slide('Quadratic classifiers',
+  parentCenter(xtable(
+    ytable(
+      text('$\\phi(x) = [x_1, x_2, x_1^2 + x_2^2]$').atomicMouseShowHide(false),
+      `$f(x) = \\sign(\\altColor{[2, 2, -1]} \\cdot \\phi(x))$`,
+      yspace(20),
+      parentCenter(ytable(stmt('Equivalently'), indent(nowrapText('$f(x) = \\begin{cases} 1 & \\text{if $\\altColor{(x_1 - 1)^2 + (x_2 - 1)^2 \\le 2}$} \\\\ -1 & \\text{otherwise} \\end{cases}$')))),
+    ).center().scale(0.8),
+    mangoGraph({circleF: true}),
+  ).margin(100)),
+  modulebox('Decision boundary is a circle'),
+));
+
+prose(
+  'Let us see how we can define a classifier with a non-linear decision boundary.',
+  _,
+  'Let\'s try to construct a feature extractor that induces a decision boundary that is a circle:',
+  'the inside is classified +1 and the outside is classified -1.',
+  _,
+  'We will add a new feature $x_1^2 + x_2^2$ into the feature vector,',
+  'and define the weights to be as follows.',
+  _,
+  'Then rewrite the classifier to make it clear that',
+  'it is the equation for the interior of a circle with radius $\\sqrt{2}$.',
+  _,
+  'As a sanity check, we you can see that $x = [0, 0]$ results in a score of $0$, which means that it is on the decision boundary.',
+  'And as either of $x_1$ or $x_2$ grow in magnitude (either $|x_1| \\to \\infty$ or $|x_2| \\to \\infty$),',
+  'the contribution of the third feature dominates and the sign of the score will be negative.',
+);
+
+add(slide('Visualization in feature space',
+  stmt('Input space: $x = [x_1, x_2]$, decision boundary is a circle'),
+  stmt('Feature space: $\\phi(x) = [x_1, x_2, x_1^2 + x_2^2]$, decision boundary is a hyperplane'),
+  //parentCenter(localImage('svm-polynomial-kernel.png').width(300).linkToUrl('http://www.youtube.com/watch?v=3liCbRZPrZA')),
+  parentCenter(localImage('svm-polynomial-kernel.png').width(300).linkToUrl('machine-learning/images/svm-polynomial-kernel.mp4')),
+));
+
+prose(
+  'Let\'s try to understand the relationship between the non-linearity in $x$ and linearity in $\\phi(x)$.',
+  _,
+  'Click on the image to see the linked video (which is about polynomial kernels and SVMs, but the same principle applies here).',
+  _,
+  'In the input space $x$, the decision boundary which separates the red and blue points is a circle.',
+  _,
+  'We can also visualize the points in <b>feature space</b>,',
+  'where each point is given an additional dimension $x_1^2 + x_2^2$.',
+  _,
+  'In this three-dimensional feature space,',
+  'a linear predictor (which is now defined by a hyperplane instead of a line)',
+  'can in fact separate the red and blue points.',
+  _,
+  'This corresponds to the non-linear predictor in the original two-dimensional space.',
+);
+
+add(summarySlide('Summary',
+  parentCenter(xtable(
+    ytable(
+      '$f_\\w(x) = \\w \\cdot \\phi(x)$',
+      bluebold('linear') + ' in $\\w, \\phi(x)$',
+      redbold('non-linear') + ' in $x$',
+    ).center(),
+    localImage('svm-polynomial-kernel.png').width(300),
+  ).margin(100).center()),
+  bulletedText('Regression: non-linear predictor, classification: non-linear decision boundary'),
+  bulletedText('Types of non-linear features: quadratic, piecewise constant, etc.'),
+  modulebox('Non-linear predictors with linear machinery'),
+));
+
+prose(
+  'To summarize, we have shown that the term "linear" is ambiguous:',
+  'a predictor in regression is non-linear in the input $x$',
+  'but is linear in the feature vector $\\phi(x)$.',
+  _,
+  'The score is also linear with respect to the weights $\\w$, which is important for efficient learning.',
+  _,
+  'Classification is similar, except we talk about (non-)linearity of the decision boundary.',
+  _,
+  'We also saw many types of non-linear predictors that you could create',
+  'by concocting various features (quadratic predictors,',
+  'piecewise constant predictors).',
+  _,
+    'The takeaway is that linear models are surprisingly powerful! More sophisticated versions of this',
+    'called kernels drove much of the ',
+    'statistical machine learning gains in the early 2000s!'
+);
+
+
+
+
+//feature templates
+
+add(slide('Roadmap',
+          parentCenter(group(bold('Topics in the lecture:'), [
+              'Nonlinear features',
+	      red('Feature templates'),
+	      'Neural networks',
+	      'Backpropagation',
+          ])).margin(100, 60).center()
+         ));
+
+prose(
+    'Hopefully, you now have an idea of how to use linear models to learn non-linear predictors',_,
+    'The main challenge though, is in defining these non-linear features.',_,
+    'We will now cover feature templates, which is a way of defining flexible families of features',_,
+);
+
+
+add(slide('Feature extraction + learning',
+  parentCenter('$\\blue{\\sF} = \\{ f_\\w(x) = \\sign(\\w \\cdot \\phi(x)) : \\w \\in \\R^d \\}$').atomicMouseShowHide(false),
+  parentCenter(overlay(
+    overlay(
+      center(a = ellipse(350, 100).fillColor('brown').fillOpacity(0.2)),
+      transform('All predictors').pivot(-1, -1).scale(0.8).shift(a.left(), a.top()),
+    ).atomicMouseShowHide(true),
+    overlay(
+      e = ellipse(150, 60).strokeWidth(2).fillColor('blue').fillOpacity(0.3),
+      moveRightOf(text(blue('Feature extraction')).scale(0.8), e),
+      center('$\\blue{\\sF}$').shiftBy(-120, -50),
+    ).atomicMouseShowHide(true),
+    overlay(
+      c = circle(5).fillColor('red').shiftBy(-10, 10),
+      moveTopOf(text(red('Learning')).scale(0.8), c),
+      moveBottomOf('$\\red{f_\\w}$', c),
+    ).atomicMouseShowHide(true),
+  )),
+  bulletedText(stmt('Feature extraction: choose $\\blue{\\sF}$ based on domain knowledge')),
+  bulletedText(stmt('Learning: choose $\\red{f_\\w} \\in \\blue{\\sF}$ based on data')),
+  modulebox('Want $\\sF$ to contain good predictors but not be too big'),
+));
+
+prose(
+  'Recall that the hypothesis class $\\sF$',
+  'is the set of predictors considered by the learning algorithm.',
+  'In the case of linear predictors, $\\sF$ is given by some function of $\\w \\cdot \\phi(x)$ for all $\\w$',
+  '(sign for classification, no sign for regression).',
+  'This can be visualized as a set in the figure.',
+  _,
+  'Learning is the process of choosing a particular predictor $f_\\w$ from $\\sF$ given training data.',
+  _,
+  'But the question that will concern us in this lecture is how do we choose $\\sF$?',
+  'We saw some options already: linear predictors, quadratic predictors, etc.,',
+  'but what makes sense for a given application?',
+  _,
+  'If the hypothesis class doesn\'t contain any good predictors,',
+  'then no amount of learning can help.',
+  'So the question when extracting features is really',
+  'whether they are powerful enough to',
+  '<b>express</b> good predictors.',
+  'It\'s okay and expected that $\\sF$ will contain bad ones as well.',
+  'Of course, we don\'t want $\\sF$ to be too big, or else learning becomes hard,',
+  'not just computationally but statistically (as we\'ll explain when we talk about generalization).',
+);
+
+add(slide('Feature extraction with feature names',
+  stmt('Example task'),
+  parentCenter(xtable(
+    'string ($x$)',
+    rightArrow(60).strokeWidth(5),
+    withTop(frameBox('$f_\\w(x) = \\sign(\\w \\cdot \\purple{\\phi}(x))$'), terminology('classifier')).atomicMouseShowHide(true),
+    rightArrow(60).strokeWidth(5),
+    'valid email address? ($y$)'
+  ).center().xmargin(10)),
+
+  stmt('Question', 'what properties of $x$ <b>might be</b> relevant for predicting $y$?'),
+  stmt('Feature extractor', 'Given $x$, produce set of ('+red('feature name')+', '+blue('feature value')+') pairs'),
+  featureExtractionExample(),
+).leftHeader(image('images/magnifying-glass.jpg').width(100)), 'features');
+
+prose(
+  'To get some intuition about feature extraction,',
+  'let us consider the task of predicting whether whether a string is a valid email address or not.',
+  _,
+  'We will assume the classifier $f_\\w$ is a linear classifier,',
+  'which is given by some feature extractor $\\phi$.',
+  _,
+  'Feature extraction is a bit of an art that requires intuition about both the task and also what machine learning algorithms are capable of.',
+  'The general principle is that features should represent properties of $x$ which <b>might be</b> relevant for predicting $y$.',
+  _,
+  'Think about the feature extractor as producing a set of (feature name, feature value) pairs.',
+  'For example, we might extract information about the length, or fraction of alphanumeric characters, whether it contains various substrings, etc.',
+  _,
+  'It is okay to add features which turn out to be irrelevant,',
+  'since the learning algorithm can always in principle choose to ignore the feature,',
+  'though it might take more data to do so.',
+  _,
+  'We have been associating each feature with a name',
+  'so that it\'s easier for us (humans) to interpret and develop the feature extractor.',
+  'The feature names act like the analogue of <b>comments</b> in code.',
+  'Mathematically, the feature name is not needed by the learning algorithm',
+  'and erasing them does not change prediction or learning.',
+);
+
+add(slide('Prediction with feature names',
+  parentCenter(table(
+    [
+      'Weight vector $\\w \\in \\R^d$'.fontcolor('darkblue'),
+      'Feature vector $\\phi(x) \\in \\R^d$'.fontcolor('darkblue'),
+    ],
+    [
+      frameBox(table(
+        [red('length&gt;10'), ':', blue('-1.2')],
+        [red('fracOfAlpha'), ':', blue('0.6')],
+        [red('contains_@'), ':', blue('3')],
+        [red('endsWith_com'), ':', blue('2.2')],
+        [red('endsWith_org'), ':', blue('1.4')],
+      )).scale(0.7),
+      frameBox(table(
+        [red('length&gt;10'), ':', blue('1')],
+        [red('fracOfAlpha'), ':', blue('0.85')],
+        [red('contains_@'), ':', blue('1')],
+        [red('endsWith_com'), ':', blue('1')],
+        [red('endsWith_org'), ':', blue('0')],
+      )).scale(0.7)
+    ],
+  ).margin(60, 0).center()),
+  stmt('<b>Score</b>: weighted combination of features'),
+  parentCenter('$\\red{\\w \\cdot \\phi(x)} = \\sum_{j=1}^d w_j \\phi(x)_j$').atomicMouseShowHide(false),
+  parentCenter(nowrapText('Example: $-1.2 (1) + 0.6(0.85) + 3(1) + 2.2(1) + 1.4(0) = 4.51$')).scale(0.7),
+));
+
+prose(
+  'A feature vector formally is just a list of numbers,',
+  'but we have endowed each feature in the feature vector with a name.',
+  _,
+  'The weight vector is also just a list of numbers,',
+  'but we can endow each weight with the corresponding name as well.',
+  _,
+  'Recall that the score is simply the dot product between the weight vector and the feature vector.',
+  'In other words, the score aggregates the contribution of each feature, weighted appropriately.',
+  _,
+  'Each feature weight $w_j$ determines how the corresponding feature value $\\phi_j(x)$ contributes to the prediction.',
+  _,
+  'If $w_j$ is positive, then the presence of feature $j$ $(\\phi_j(x) = 1)$ favors a positive classification (e.g., ending with com).',
+  'Conversely, if $w_j$ is negative, then the presence of feature $j$ favors a negative classification (e.g., length greater than 10).',
+  'The magnitude of $w_j$ measures the strength or importance of this contribution.',
+  _,
+    'As a side note - it might be tempting to try to interpret these weights as correlations.',
+    'Does a positive weight mean that a feature is positively correlated with the output?',
+    'Not necessarily - the weights in a model work together, and a feature with positive weight can even',
+    'have negative correlation with the outcome. You may have seen an example of this in a stats course - called simpsons paradox.',
+);
+
+add(slide('Organization of features?',
+  parentCenter(featureExtractionExample()).atomicMouseShowHide(true),
+  'Which features to include?  Need an organizational principle...',
+));
+
+prose(
+  'How would we go about about creating good features?',
+  _,
+  'Here, we used our prior knowledge to define certain features (like whether an input contains_@)',
+  'which we believe are helpful for detecting email addresses.',
+  _,
+  'But this is ad-hoc, and it\'s easy to miss useful features,',
+  'and there might be other features which are predictive but not intuitive.',
+  _,
+  'We need a more systematic way to go about this.',
+);
+
+add(slide('Feature templates',
+  definition('feature template',
+    'A <b>feature template</b> is a group of features all computed in a similar way.',
+  ),
+  featureTemplateExample(),
+  modulebox('Define types of pattern to look for, not particular patterns'),
+).leftHeader(image('images/cookie-cutter.jpg').dim(150)));
+
+prose(
+  'A useful organization principle is a <b>feature template</b>,',
+  'which groups all the features which are computed in a similar way.',
+  '(People often use the word "feature" when they really mean "feature template".)',
+  _,
+  'Rather than defining individual features like endsWith_com,',
+  'we can define a single feature template which expands into all the features that computes',
+  'whether the input $x$ matches any three characters.',
+  _,
+  'Typically, we will write a feature template as an English description with a blank (__),',
+  'which is to be filled in with an arbitrary value.',
+  _,
+  'The upshot is that we don\'t need to know which particular patterns (e.g., three-character suffixes) are useful,',
+  'but only that <b>existence</b> of certain patterns (e.g., three-character suffixes) are useful cue to look at.',
+  _,
+  'It is then up to the learning algorithm to figure out which patterns are useful by assigning the appropriate feature weights.',
+);
+
+add(slide('Feature templates example 1',
+  stmt('Input'),
+  parentCenter(greenitalics('abc@gmail.com')),
+  parentCenter(table(
+    ['Feature template', 'Example feature', ''].map(darkblue),
+    featureTemplateRow('Last three characters equals ___', ['com']).concat([': 1']),
+    featureTemplateRow('Length greater than ___', ['10']).concat([': 1']),
+    featureTemplateRow('Fraction of alphanumeric characters', []).concat([': 0.85']),
+  ).margin(20, 5)),
+).leftHeader(image('images/cookie-cutter.jpg').dim(150)));
+
+prose(
+  'Here are some other examples of feature templates.',
+  _,
+  'Note that an isolated feature (e.g., fraction of alphanumeric characters) can be treated',
+  'as a trivial feature template with no blanks to be filled.',
+  _,
+  'In many cases, the feature value is binary (0 or 1),',
+  'but they can also be real numbers.',
+);
+
+add(slide('Feature templates example 2',
+  stmt('Input'),
+  // https://www.google.com/maps/@37.4068176,-122.1715122,1401m/data=!3m1!1e3
+  parentCenter(xtable(
+    localImage('dish-satelite.png').width(200),
+    ytable(
+      'Latitude: 37.4068176',
+      'Longitude: -122.1715122'
+    ),
+  ).margin(50).center()),
+
+  parentCenter(table(
+    ['Feature template', 'Example feature name', ''].map(darkblue),
+    featureTemplateRow('Pixel intensity of image at row ___ and column ___ (___ channel)', [10, 93, 'red']).concat([': 0.8']),
+    featureTemplateRow('Latitude is in [ ___, ___ ] and longitude is in [ ___, ___ ]', [37.4, 37.5, -122.2, -122.1]).concat([': 1']),
+  ).margin(20, 5).scale(0.6)),
+).leftHeader(image('images/cookie-cutter.jpg').dim(150)));
+
+prose(
+  'As another example application,',
+  'suppose the input is an aerial image along with the latitude/longitude corresponding to where the image was taken.',
+  'This type of input arises in poverty mapping and land cover classification.',
+  _,
+  'In this case, we might define one feature template corresponding to',
+  'the pixel intensities at various pixel-wise row/column positions in the image across all the 3 color channels (e.g., red, green, blue).',
+  _,
+  'Another feature template might define a family of binary features,',
+  'one for each region of the world, where each region is defined by a bounding box over latitude and longitude.',
+  /*_,
+  'Finally, it is important to be clear when describing features.',
+  'Saying "length" might mean that there is one feature whose value is the length of $x$',
+  'or that there could be a feature template "length is equal to ___".',*/
+);
+
+add(slide('Sparsity in feature vectors',
+  parentCenter(xtable(
+    greenitalics('abc@gmail.com'),
+    withBottom(
+      thickRightArrow(350),
+      text('last character equals ___'),
+    ),
+    frameBox(new Table(wholeNumbers(26).map(function(i) {
+      var c = String.fromCharCode(97+i);
+      var hit = c == 'm';
+      return [red('endsWith_' + c), ':', (hit ? bold('1') : '0')];
+    })).margin(5, 0)).scale(0.4).atomicMouseShowHide(true),
+  ).center().margin(15)),
+  stmt('Compact representation'),
+  parentCenter(tt('{"endsWith_m": 1}')),
+).leftHeader(image('images/cookie-cutter.jpg').dim(150)));
+
+prose(
+  'In general, a feature template corresponds to many features,',
+  'and sometimes, <b>for a given input</b>, most of the feature values are zero;',
+  'that is, the feature vector is <b>sparse</b>.',
+  _,
+  'Of course, different feature vectors have different non-zero features.',
+  _,
+  'In this case, it would be inefficient to represent all the features explicitly.',
+  'Instead, we can just store the values of the non-zero features,',
+  'assuming all other feature values are zero by default.',
+);
+
+add(slide('Two feature vector implementations',
+  parentCenter(table(
+    [
+      stmt('Arrays (good for dense features)'),
+      stmt('Dictionaries (good for sparse features)'),
+    ],
+    [
+      frameBox(table(
+        [red('pixelIntensity(0,0)'), ':', blue('0.8')],
+        [red('pixelIntensity(0,1)'), ':', blue('0.6')],
+        [red('pixelIntensity(0,2)'), ':', blue('0.5')],
+        [red('pixelIntensity(1,0)'), ':', blue('0.5')],
+        [red('pixelIntensity(1,1)'), ':', blue('0.8')],
+        [red('pixelIntensity(1,2)'), ':', blue('0.7')],
+        [red('pixelIntensity(2,0)'), ':', blue('0.2')],
+        [red('pixelIntensity(2,1)'), ':', blue('0')],
+        [red('pixelIntensity(2,2)'), ':', blue('0.1')],
+      ).margin(5, 0)).scale(0.8).atomicMouseShowHide(true),
+      frameBox(table(
+        [red('fracOfAlpha'), ':', blue('0.85')],
+        [red('contains_a'), ':', blue('0')],
+        [red('contains_b'), ':', blue('0')],
+        [red('contains_c'), ':', blue('0')],
+        [red('contains_d'), ':', blue('0')],
+        [red('contains_e'), ':', blue('0')],
+        ['...', nil(), nil()],
+        [red('contains_@'), ':', blue('1')],
+        ['...', nil(), nil()],
+      ).margin(5, 0)).scale(0.8).atomicMouseShowHide(true),
+    ],
+    [
+      std(tt('[0.8, 0.6, 0.5, 0.5, 0.8, 0.7, 0.2, 0, 0.1]')).scale(0.7),
+      std(tt('{"fracOfAlpha": 0.85, "contains_@": 1}')).scale(0.7),
+    ],
+  ).center().margin(20)),
+));
+
+prose(
+  'In general,',
+  'there are two common ways to implement feature vectors: using arrays and using dictionaries.',
+  _,
+  '<b>Arrays</b> assume a fixed ordering of the features and store the feature values as an array.',
+  'This implementation is appropriate when the number of nonzeros is significant (the features are dense).',
+  'Arrays are especially efficient in terms of space and speed (and you can take advantage of GPUs).',
+  'In computer vision applications, features (e.g., the pixel intensity features)',
+  'are generally dense, so arrays are more common.',
+  _,
+  'However, when we have sparsity (few nonzeros),',
+  'it is typically more efficient to implement the feature vector as a <b>dictionary</b> (map) from strings to doubles',
+  'rather than a fixed-size array of doubles.',
+  'The features not in the dictionary implicitly have a default value of zero.',
+  'This sparse implementation is useful for natural language processing with linear predictors,',
+  'and is what allows us to work efficiently over millions of features.',
+  'Dictionaries do incur extra overhead compared to arrays,',
+  'and therefore dictionaries are much slower when the features are not sparse.',
+  _,
+  'One advantage of the sparse feature implementation is that',
+  'you don\'t have to instantiate all the set of possible features in advance;',
+  'the weight vector can be initialized to empty <tt>{}</tt>,',
+  'and only when a feature weight becomes non-zero do we store it.',
+  'This means we can dynamically update a model with incrementally arriving data,',
+  'which might instantiate new features.',
+);
+
+add(summarySlide('Summary',
+  parentCenter('$\\sF = \\{ f_\\w(x) = \\sign(\\w \\cdot \\purple{\\phi}(x)) : \\w \\in \\R^d \\}$'),
+  stmt('Feature template'),
+  featureTemplateExample().atomicMouseShowHide(true),
+  stmt('Dictionary implementation'),
+  parentCenter(tt('{"endsWith_com": 1}')),
+));
+
+prose(
+  'The question we are concerned with in this section is how to define the hypothesis class $\\sF$,',
+  'which in the case of linear predictors is the question of what the feature extractor $\\phi$ is.',
+  _,
+  'We showed how <b>feature templates</b> can be useful for organizing the definition of many features,',
+  'and that we can use dictionaries to represent <b>sparse</b> feature vectors efficiently.',
+  _,
+  'Stepping back, feature engineering is one of the most critical components',
+  'in the practice of machine learning.',
+  'It often does not get as much attention as it deserves,',
+  'mostly because it is a bit of an art and somewhat domain-specific.',
+  _,
+  'More powerful predictors such as neural networks will alleviate some of the burden of feature engineering,',
+  'but even neural networks use feature vectors as the initial starting point,',
+  'and therefore its effectiveness is ultimately governed by how good the features are.',
+);
+
+
+add(slide('Roadmap',
+          parentCenter(group(bold('Topics in the lecture:'), [
+              'Nonlinear features',
+	      'Feature templates',
+	      red('Neural networks'),
+	      'Backpropagation',
+          ])).margin(100, 60).center()
+         ));
+
+prose(
+    'Thus far, we have been making linear models more and more flexible by designing complex features',_,
+    'But this is time-consuming, and its often hard for humans to write down the right features',_,
+    'Neural nets have the promise of making this process automatic - neural nets can be thought of as automated feature extractors',_,
+    'We will begin by defining and understanding neural networks as a model',_,
+    'Afterwards, we will discuss how to compute gradients for these models using backpropagation',
+);
+
+add(slide('What is this animal?',
+          parentCenter(image('images/zebra.jpg')),
+            bulletedText('What is the right feature extractor for a zebra?'),
+  bulletedText('The goal: automatically learn a feature extractor'),
+         ));
+
+prose(
+    'Lets return to our running example of building a zebra detector',_,
+    'Whats the right set of features here? its honestly pretty hard! maybe you use a set of hand-written texture matchers',_,
+    'But this seems error prone. We want our model to learn whats a good feature from data!',
+);
+
+
+add(slide('Non-linear predictors',
+  parentCenter(table(
+    [
+      ytable(
+        stmt('Linear predictors'),
+        xtable('$f_\\w(x) = \\w \\cdot \\phi(x)$,', '$\\phi(x) = [1, x]$').margin(10),
+      ),
+      kiwiGraph({bestF: true, altF: true}).scale(0.45).atomicMouseShowHide(true),
+    ],
+    [
+      ytable(
+        stmt('Non-linear (quadratic) predictors'),
+        xtable('$f_\\w(x) = \\w \\cdot \\phi(x)$,', '$\\phi(x) = [1, x, \\red{x^2}]$').margin(10),
+      ),
+      kiwiGraph({squaredF: true}).scale(0.45).atomicMouseShowHide(true),
+    ],
+    [
+      ytable(
+        stmt('Non-linear neural networks'),
+        xtable('$f_\\w(x) = \\w \\cdot \\red{\\sigma(\\V \\phi(x))}$,', '$\\phi(x) = [1, x]$').margin(10),
+      ),
+      kiwiGraph({comboF: true}).scale(0.45).atomicMouseShowHide(true),
+    ],
+  ).xmargin(50).yjustify('c')),
+));
+
+prose(
+  'Recall that our first hypothesis class was linear (in $x$) predictors,',
+  'which for regression means that the predictors are lines.',
+  _,
+  'However, we also showed that you could get non-linear (in $x$) predictors by',
+  'simply changing the feature extractor $\\phi$.',
+  'For example, by adding the feature $x^2$, one obtains quadratic predictors.',
+  _,
+  'One disadvantage of this approach is that if $x$ were $d$-dimensional,',
+  'one would need $O(d^2)$ features and corresponding weights,',
+  'which presents considerable computational and statistical challenges.',
+  _,
+    'We will show that neural networks are a way to build complex nonlinear predictors',
+    'without creating a large number of complex feature extractors by hand',
+  _,
+    'It is a common misconception that neural networks are somehow more expressive than other models',
+    'but this isnt necessarily true. You can define $\\phi$ to be extremely large, to the point where',
+    'it can approximate arbitrary smooth functions -- this is the kernel based methods i mentioned last lecture',
+  _,
+  'Rather, neural networks yield non-linear predictors in a more <b>compact</b> way.',
+  'For instance, you might not need $O(d^2)$ features to represent the desired non-linear predictor.',
+);
+
+add(slide('Motivating example',
+  example('predicting car collision',
+    stmt('Input: positions of two oncoming cars $x = [x_1, x_2]$'),
+    yspace(10),
+    stmt('Output: whether safe ($y = +1$) or collide ($y = -1$)'),
+  ).scale(0.8),
+  stmt('Unknown: safe if cars sufficiently far: $y = \\sign(|x_1 - x_2| - 1)$'),
+  parentCenter(xtable(
+    mangoDataTable({carData: true}),
+    mangoGraph({carF: true, car: true, data: true}),
+  ).margin(50).center()),
+).leftHeader(localImage('two-cars.jpg').width(400)));
+
+prose(
+  'As a motivating example,',
+  'consider the problem of predicting whether two cars are going to collide',
+  'given the their positions (as measured from distance from one side of the road).',
+  'In particular, let $x_1$ be the position of one car and $x_2$ be the position of the other car.',
+  _,
+  'Suppose the true output is $1$ (safe) whenever the cars are separated by a distance of at least $1$.',
+  'This relationship can be represented by the decision boundary which labels',
+  'all points in the interior region between the two red lines as negative,',
+  'and everything on the exterior (on either side) as positive.',
+
+  'Of course, this true input-output relationship is unknown to the learning algorithm,',
+  'which only sees training data.',
+  'Consider a simple training dataset consisting of four points.',
+  '(This is essentially the famous XOR problem that was impossible to fit using linear classifiers.)',
+);
+
+add(slide('Decomposing the problem',
+  parentCenter(xtable(
+    ytable(
+      stmt('Test if car 1 is far right of car 2'),
+      indent('$h_1(x) = \\1[x_1 - x_2 \\ge 1]$'),
+      stmt('Test if car 2 is far right of car 1'),
+      indent('$h_2(x) = \\1[x_2 - x_1 \\ge 1]$'),
+      stmt('Safe if at least one is true'),
+      indent('$f(x) = \\sign(h_1(x) + h_2(x))$'),
+    ),
+    mangoGraph({carF: true, car: true, data: true, hLabels: true}),
+  ).margin(50).center()),
+  parentCenter(frameBox(table(
+    ['$x$', '$h_1(x)$', '$h_2(x)$', '$f(x)$'],
+    ['$[0, 2]$', '$0$', '$1$', '$+1$'],
+    ['$[2, 0]$', '$1$', '$0$', '$+1$'],
+    ['$[0, 0]$', '$0$', '$0$', '$-1$'],
+    ['$[2, 2]$', '$0$', '$0$', '$-1$'],
+  ).margin(40, 10).yjustify('c').scale(0.7))),
+));
+
+prose(
+  'One way to motivate neural networks (without appealing to the brain)',
+  'is <b>problem decomposition</b>.',
+  _,
+  'The intuition is to break up the full problem into two subproblems:',
+  'the first subproblem tests if car 1 is to the far right of car 2;',
+  'the second subproblem tests if car 2 is to the far right of car 1.',
+  'Then the final output is 1 iff at least one of the two subproblems returns 1.',
+  _,
+  'Concretely, we can define $h_1(x)$ to be the output of the first subproblem,',
+  'which is a simple linear decision boundary (in fact, the right line in the figure).',
+  _,
+  'Analogously, we define $h_2(x)$ to be the output of the second subproblem.',
+  _,
+  'Note that $h_1(x)$ and $h_2(x)$ take on values 0 or 1 instead of -1 or +1.',
+  _,
+  'The points can then be classified by first computing $h_1(x)$ and $h_2(x)$,',
+  'and then combining the results into $f(x)$.',
+);
+
+add(slide('Rewriting using vector notation',
+  stmt('Intermediate subproblems'),
+  nil(),
+  indent(xtable(
+    '$h_1(x) = \\1[x_1 - x_2 \\ge 1]$',
+    nowrapText('$= \\1[\\red{[-1, +1, -1]} \\cdot [1, x_1, x_2] \\ge 0]$').atomicMouseShowHide(false),
+  ).margin(5)),
+  indent(xtable(
+    '$h_2(x) = \\1[x_2 - x_1 \\ge 1]$',
+    nowrapText('$= \\1[\\red{[-1, -1, +1]} \\cdot [1, x_1, x_2] \\ge 0]$'),
+  ).margin(5)),
+  indent(xtable(
+    nowrapText('$\\h(x) = \\1\\left[ \\red{\\left[\\begin{array}{ccc} -1 & +1 & -1 \\\\ -1 & -1 & +1 \\end{array} \\right]} \\left[\\begin{array}{c} 1 \\\\ x_1 \\\\ x_2 \\end{array}\\right] \\ge 0 \\right]$'),
+  ).margin(5).atomicMouseShowHide(false)),
+  stmt('Predictor'),
+  indent(xtable(
+    '$f(x) = \\sign(h_1(x) + h_2(x))$',
+    '$= \\sign(\\red{[1, 1]} \\cdot \\h(x))$',
+  ).margin(5)),
+));
+
+prose(
+  'Now let us rewrite this predictor $f(x)$ using vector notation.',
+  _,
+  'We can define a feature vector $[1, x_1, x_2]$ and a corresponding weight vector,',
+  'where the dot product thresholded yields exactly $h_1(x)$.',
+  _,
+  'We do the same for $h_2(x)$.',
+  _,
+  'We put the two subproblems into one equation by stacking the weight vectors into one matrix.',
+  'Recall that left-multiplication by a matrix is equivalent to taking the dot product with each row.',
+  'By convention, the thresholding at 0 ($\\1[\\cdot \\ge 0]$) applies component-wise.',
+  _,
+  'Finally, we can define the predictor in terms of a simple dot product.',
+  _,
+  'Now of course, we don\'t know the weight vectors,',
+  'but we can learn them from the training data!',
+);
+
+
+add(slide('Learning strategy',
+  stmt('Define: $\\phi(x) = [1, x_1, x_2]$'),
+  stmt('Intermediate hidden subproblems'),
+  indent(stagger(
+    '$h_1 = \\1[x_1 - x_2 \\ge 1]$',
+    xtable('$h_1 = \\1[\\red{\\v_1} \\cdot \\phi(x) \\ge 0]$', text('$\\red{\\v_1} = [-1, +1, -1]$').scale(0.7)).margin(150),
+  _)),
+  pause(),
+  indent(stagger(
+    '$h_2 = \\1[x_2 - x_1 \\ge 1]$',
+    xtable('$h_2 = \\1[\\red{\\v_2} \\cdot \\phi(x) \\ge 0]$', text('$\\red{\\v_2} = [-1, -1, +1]$').scale(0.7)).margin(150),
+  _)),
+  pause(),
+  stmt('Final prediction'),
+  indent(stagger(
+    '$y = \\sign(h_1 + h_2)$',
+    xtable('$f_\\red{\\V, \\w}(x) = \\sign(\\red{w_1} h_1 + \\red{w_2} h_2)$', text('$\\red{\\w} = [1, 1]$').scale(0.7)).margin(100),
+  _)),
+  pause(),
+  keyIdea('joint learning',
+    'Goal: learn both hidden subproblems $\\red{\\V = (\\v_1, \\v_2)}$ and combination weights $\\red{\\w = [w_1, w_2]}$',
+  _),
+	  _));
+
+prose(
+    'The story thus far is similar to feature extraction - we have this specific set of h-functions that work',_,
+    'However, we didnt want to hand craft these things, so what do we do?',_,
+    'Well, we can just learn these intermediate feature extractors from data',_,
+)
+
+
+add(slide('Avoid zero gradients',
+  stmt('Problem: gradient of $h_1(x)$ with respect to $\\v_1$ is 0'),
+  indent(nowrapText('$h_1(x) = \\1[\\red{\\v_1} \\cdot \\phi(x) \\ge 0]$')),
+  stmt('Solution: replace with an <b>activation function</b> $\\sigma$ with non-zero gradients'),
+  parentCenter(activationFunctionGraphs().scale(0.9)),
+  indent(nowrapText('$h_1(x) = \\sigma(\\red{\\v_1} \\cdot \\phi(x))$')),
+));
+
+prose(
+  'Later we\'ll show how to perform learning using gradient descent,',
+  'but we can anticipate one problem,',
+  'which we encountered when we tried to optimize the zero-one loss.',
+  _,
+  'The gradient of $h_1(x)$ with respect to $\\v_1$ is always zero because of the threshold function.',
+  _,
+  'To fix this, we replace the threshold function with an <b>activation function</b> with non-zero gradients',
+  _,
+  'Classically, neural networks used the <b>logistic function</b> $\\sigma(z)$,',
+  'which looks roughly like the threshold function',
+  'but has non-zero gradients everywhere.',
+  _,
+  'Even though the gradients are non-zero,',
+  'they can be quite small when $|z|$ is large',
+  '(a phenomenon known as saturation).',
+  'This makes optimizing with the logistic function still difficult.',
+  _,
+  'In 2012, Glorot et al. introduced the ReLU activation function,',
+  'which is simply $\\max(z, 0)$.',
+  'This has the advantage that at least on the positive side, the gradient does not vanish',
+  '(though on the negative side, the gradient is always zero).',
+  'As a bonus, ReLU is easier to compute (only max, no exponentiation).',
+  'In practice, ReLU works well and has become the activation function of choice.',
+  _,
+  'Note that if the activation function were linear (e.g., the identity function),',
+  'then the gradients would always be nonzero,',
+  'but you would lose the power of a neural network,',
+  'because you would simply get the product of the final-layer weight vector',
+  'and the weight matrix ($\\w^\\top \\V$),',
+  'which is equivalent to optimizing over a single weight vector.',
+  _,
+  'Therefore, that there is a tension between wanting an activation function',
+  'that is non-linear but also has non-zero gradients.',
+);
+
+add(slide('Two-layer neural networks',
+  stmt('Intermediate subproblems'),
+  parentCenter(xtable(
+    xtable(
+      vectorBox('$\\h(x)$', 3, 1, 'purple'),
+      '$=$',
+      '$\\sigma$', '$\\big($',
+      xtable(
+        vectorBox('$\\red{\\V}$', 3, 6, 'red'),
+        vectorBox('$\\phi(x)$', 6, 1, 'green'),
+      ).center(),
+      '$\\big)$',
+    ).center(),
+  ).center().margin(5)),
+  stmt('Predictor (classification)'),
+  parentCenter(xtable(
+    '$f_\\red{\\V, \\w}(x)$', '$=$', '$\\sign\\big($',
+    vectorBox('$\\red{\\w}$', 1, 3, 'red'),
+    '$\\cdot$',
+    vectorBox('$\\h(x)$', 3, 1, 'purple'),
+    '$\\big)$',
+  ).center().margin(5)),
+  modulebox('Interpret $\\h(x)$ as a learned feature representation!'),
+  stmt('Hypothesis class'),
+  parentCenter('$\\sF = \\{ f_{\\red{\\V,\\w}} : \\red{\\V} \\in \\R^{k \\times d}, \\red{\\w} \\in \\R^k \\}$').atomicMouseShowHide(false),
+));
+
+prose(
+  'Now we are finally ready to define the hypothesis class of two-layer neural networks.',
+  _,
+  'We start with a feature vector $\\phi(x)$.',
+  _,
+  'We multiply it by a weight matrix $\\V$ (whose rows can be interpreted as the weight vectors of the $k$ intermediate subproblems.',
+  _,
+  'Then we apply the activation function $\\sigma$ to each of the $k$ components to get the hidden representation $\\h(x) \\in \\R^k$.',
+  _,
+  'We can actually interpret $\\h(x)$ as a learned feature vector (representation),',
+  'which is derived from the original non-linear feature vector $\\phi(x)$.',
+  _,
+  'Given $\\h(x)$, we take the dot product with a weight vector $\\w$ to get the score used to drive either regression or classification.',
+  _,
+  'The hypothesis class is the set of all such predictors obtained by varying the first-layer weight matrix $\\V$ and the second-layer weight vector $\\w$.',
+);
+
+add(slide('Deep neural networks',
+  stmt('1-layer neural network'),
+  parentCenter(xtable(
+    '$\\text{score} =$',
+    vectorBox('$\\w$', 1, 6, 'red'),
+    '$\\cdot$',
+    vectorBox('$\\phi(x)$', 6, 1, 'green'),
+  ).center().margin(5)),
+  stmt('2-layer neural network'),
+  parentCenter(xtable(
+    '$\\text{score} =$',
+    vectorBox('$\\w$', 1, 3, 'red'),
+    '$\\cdot$',
+    '$\\sigma\\Big($',
+    vectorBox('$\\V$', 3, 6, 'red'),
+    vectorBox('$\\phi(x)$', 6, 1, 'green'),
+    '$\\Big)$',
+  ).center().margin(5)),
+  stmt('3-layer neural network'),
+  parentCenter(xtable(
+    '$\\text{score} =$',
+    vectorBox('$\\w$', 1, 3, 'red'),
+    '$\\cdot$',
+    '$\\sigma\\Big($',
+    vectorBox('$\\mathbf V_2$', 3, 4, 'red'),
+    '$\\sigma\\Big($',
+    vectorBox('$\\V_1$', 4, 6, 'red'),
+    vectorBox('$\\phi(x)$', 6, 1, 'green'),
+    '$\\Big)$',
+    '$\\Big)$',
+  ).center().margin(5)),
+));
+
+prose(
+    'Why not go further? we currently have a linear classifier on top of a simple feature extractor.',
+    'We can expand this and put another function in between the two that can combine simple features',
+    'to make more complex ones. This is the basic idea behind multi-layer neural networks.',
+  _,
+  'Warm up: for a one-layer neural network (a.k.a. a linear predictor),',
+  'the score that drives prediction is simply a dot product between a weight vector and a feature vector.',
+  _,
+  'We just saw for a two-layer neural network,',
+  'we apply a linear layer $\\V$ first,',
+  'followed by a non-linearity $\\sigma$, and then take the dot product.',
+  _,
+  'To obtain a three-layer neural network,',
+  'we apply a linear layer and a non-linearity (this is the basic building block).',
+  'This can be iterated any number of times.',
+  'No matter now deep the neural network is, the top layer is always a linear function,',
+  'and all the layers below that can be interpreted as',
+  'defining a (possibly very complex) hidden feature vector.',
+  _,
+  'In practice, you would also have a bias term (e.g., $\\V \\phi(x) + b$).',
+  'We have omitted all bias terms for notational simplicity.',
+);
+
+add(slide('Layers represent multiple levels of abstractions',
+  //stmt('learn high-level abstractions automatically'),
+  parentCenter(image('images/feature-hierarchy.png').width(300)),
+).leftHeader('[figure from Honglak Lee]'));
+
+prose(
+  'It can be difficult to understand what a sequence of (matrix multiply, non-linearity) operations buys you.',
+  _,
+  'To provide intuition, suppose the input feature vector $\\phi(x)$',
+  'is a vector of all the pixels in an image.',
+  _,
+  'Then each layer can be thought of as producing an increasingly abstract representation of the input.',
+  'The first layer detects edges, the second detects object parts, the third detects objects.',
+  'What is shown in the figure is for each component $j$ of the hidden representation $\\h(x)$,',
+  'the input image $\\phi(x)$ that maximizes the value of $h_j(x)$.',
+  _,
+  'Though we haven\'t talked about learning neural networks,',
+  'it turns out that the "levels of abstraction" story is actually borne out visually',
+  'when we learn neural networks on real data (e.g., images).',
+);
+
+add(slide('Why depth?',
+  parentCenter(xtable(
+    vectorBox('$\\phi(x)$', 6), thickRightArrow(50),
+    vectorBox('$h_1(x)$', 4), thickRightArrow(50),
+    vectorBox('$h_2(x)$', 4), thickRightArrow(50),
+    vectorBox('$h_3(x)$', 4), thickRightArrow(50),
+    vectorBox('$h_4(x)$', 4), thickRightArrow(50),
+    vectorBox('$\\text{score}$', 1),
+  ).center().margin(5)).atomicMouseShowHide(true),
+  stmt('Intuitions'),
+  bulletedText('Multiple levels of abstraction'),
+  bulletedText('Multiple steps of computation'),
+  bulletedText('Empirically works well'),
+  bulletedText('Theory is still incomplete'),
+));
+
+prose(
+  'Beyond learning hierarchical feature representations,',
+  'deep neural networks can be interpreted in a few other ways.',
+  _,
+  'One perspective is that each layer can be thought of as performing some computation,',
+  'and therefore deep neural networks can be thought of as performing multiple steps of computation.',
+  _,
+  'But ultimately, the real reason why deep neural networks are interesting',
+  'is because they work well in practice.',
+  _,
+  'From a theoretical perspective,',
+  'we have a quite an incomplete explanation for why depth is important.',
+  'The original motivation from McCulloch/Pitts in 1943 showed that neural networks',
+  'can be used to simulate a bounded computation logic circuit.',
+  'Separately it has been shown that depth $k+1$ logic circuits',
+  'can represent more functions than depth $k$.',
+  'However, neural networks are real-valued and might have types of computations',
+  'which don\'t fit neatly into logical paradigm.',
+  'Obtaining a better theoretical understanding is an active area of research in statistical learning theory.',
+);
+
+add(summarySlide('Summary',
+  parentCenter(xtable(
+    '$\\text{score} =$',
+    vectorBox('$\\w$', 1, 3, 'red'),
+    '$\\cdot$',
+    '$\\sigma($',
+    vectorBox('$\\V$', 3, 6, 'red'),
+    vectorBox('$\\phi(x)$', 6, 1, 'green'),
+    '$)$',
+  ).center().margin(5)).atomicMouseShowHide(true),
+  bulletedText('Intuition: decompose problem into intermediate parallel subproblems'),
+  bulletedText('Deep networks iterate this decomposition multiple times'),
+  bulletedText('Hypothesis class contains predictors ranging over weights for all layers'),
+  bulletedText('Next up: learning neural networks'),
+));
+
+prose(
+  'To summarize, we started with a toy problem (the XOR problem)',
+  'and used it to motivate neural networks,',
+  'which decompose a problem into intermediate subproblems, which are solved in parallel.',
+  _,
+  'Deep networks iterate this multiple times to build increasingly high-level representations of the input.',
+  _,
+  'Next, we will see how we can learn a neural network',
+  'by choosing the weights for all the layers.',
+);
+
+
+
+//backprop
+
+add(slide('Roadmap',
+          parentCenter(group(bold('Topics in the lecture:'), [
+              'Nonlinear features',
+	      'Feature templates',
+	      'Neural networks',
+	      red('Backpropagation'),
+          ])).margin(100, 60).center()
+         ));
+
+prose(
+    'How should we train these models? we are going to use gradient descent',_,
+    'But it still seems hard to compute the gradient',_,
+    'We are now going to discuss backpropagation which lets us compute gradients automatically',
+);
+
+add(slide('Motivation: regression with four-layer neural networks',
+  stmt('Loss on one example'),
+  parentCenter(ytable(
+    std('$\\displaystyle \\Loss(x, y, \\red{\\V_1, \\V_2, \\V_3, \\w}) = (\\red{\\w} \\cdot \\sigma(\\red{\\V_3} \\sigma(\\red{\\V_2} \\sigma(\\red{\\V_1} \\phi(x)))) - y)^2$').atomicMouseShowHide(false),
+  )).scale(0.8),
+  stmt('Stochastic gradient descent'),
+  parentCenter(ytable(
+    '$\\V_1 \\leftarrow \\V_1 - \\eta \\nabla_{\\red{\\V_1}} \\Loss(x, y, \\red{\\V_1}, \\V_2, \\V_3, \\w)$',
+    '$\\V_2 \\leftarrow \\V_2 - \\eta \\nabla_{\\red{\\V_2}} \\Loss(x, y, \\V_1, \\red{\\V_2}, \\V_3, \\w)$',
+    '$\\V_3 \\leftarrow \\V_3 - \\eta \\nabla_{\\red{\\V_3}} \\Loss(x, y, \\V_1, \\V_2, \\red{\\V_3}, \\w)$',
+    '$\\w \\leftarrow \\w - \\eta \\nabla_{\\red{\\w}} \\Loss(x, y, \\V_1, \\V_2, \\V_3, \\red{\\w})$',
+  )),
+  modulebox('How to get the gradient without doing manual work?'),
+));
+
+prose(
+  'So far, we\'ve defined neural networks, which take an initial feature vector $\\phi(x)$',
+  'and sends it through a sequence of matrix multiplications and non-linear activations $\\sigma$.',
+  'At the end, we take the dot product between a weight vector $\\w$ to produce the score.',
+  _,
+  'In regression, we predict the score, and use the squared loss,',
+  'which looks at the squared difference betwen the score and the target $y$.',
+  _,
+  'Recall that we can use stochastic gradient descent to optimize the training loss (which is an average over the per-example losses).',
+  'Now, we need to update all the weight matrices, not just a single weight vector.',
+  'This can be done by taking the gradient with respect to each weight vector/matrix separately,',
+  'and updating each parameter with the gradient descent update.',
+  _,
+  'We can now proceed to take the gradient of the loss function with respect to the various weight vector/matrices.',
+  'You should know how to do this: just apply the chain rule.',
+  'But grinding through this complex expression by hand can be quite tedious.',
+  'If only we had a way for this to be done automatically for us...',
+);
+
+add(slide('Computation graphs',
+  parentCenter('$\\displaystyle \\Loss(x, y, \\red{\\V_1, \\V_2, \\V_3, \\w}) = (\\red{\\w} \\cdot \\sigma(\\red{\\V_3} \\sigma(\\red{\\V_2} \\sigma(\\red{\\V_1} \\phi(x)))) - y)^2$'),
+  definition('computation graph',
+    'A directed acyclic graph whose root node represents the final mathematical expression and each node represents intermediate subexpressions.',
+  ),
+  stmt('Upshot: compute gradients via general ' + bluebold('backpropagation') + ' algorithm'),
+  headerList('Purposes',
+    'Automatically compute gradients (how TensorFlow and PyTorch work)',
+    'Gain insight into modular structure of gradient computations',
+  ),
+));
+
+prose(
+  'This is where computation graphs are helpful.',
+  _,
+  'A computation graph is a directed acyclic graph that represents an arbitrary mathematical expression.',
+  'The root of that node represents the final expression, and the other nodes represent intermediate subexpressions.',
+  _,
+  'After having constructed the graph,',
+  'we can compute all the gradients we want by running the general-purpose backpropagation algorithm,',
+  'which operates on an arbitrary computation graph.',
+  _,
+  'There are two purposes to using computation graphs.',
+  'The first and most obvious one is that it avoids having us to do pages of calculus,',
+  'and instead delegates this to a computer.',
+  'This is what packages such as TensorFlow or PyTorch do,',
+  'and essentially all non-trivial deep learning models are trained like this.',
+  _,
+  'The second purpose is that by defining the graph,',
+  'we can gain more insight into the nature of how gradients are computed in a modular way.',
+);
+
+// general functions for computation graphs
+T = function() {
+  return rootedTree.apply(null, arguments).recmargin(50, 80).drawArrow1(true).edgeStrokeWidth(3);
+}
+B = rootedTreeBranch;
+C = function(label, node) {
+  if (label[0] == '$') label = label.substring(1, label.length-1);
+  label = '$\\green{' + label + '}$';
+  return B(opaquebg(label).scale(0.7), node);
+}
+Leaf = function(x) { return T(x).nodeBorderWidth(0); }
+opPlus = '$\\,+\\,$';
+opMinus = '$\\,-\\,$';
+opDot = '$\\,\\cdot\\,$';
+opLogistic = '$\\,\\sigma\\,$';
+opMax = '$\\,\\text{max}\\,$';
+opSquare = '$(\\cdot)^2$';
+
+add(slide('Neural networks',
+  stmt('Neural network (one hidden layer)'),
+  indent(neuralNetwork(0), 40),
+	  pause(-1),
+	  stmt('We can represent neural networks as a graph'),
+	  bulletedText('Each node performs a computation'),
+	  bulletedText('Each edge is a variable'),
+	  _));
+prose(
+    'Remember that a neural network can be written as a graph',_,
+    'This is a simple example of a two layer net from earlier',_,
+    'Backpropagation is a simple set of rules that let us compute gradients by walking backwards from the loss to the paramter we are differentiating',_,
+    'The key object is a computation graph, which is a slightly more detailed version of this graph you see here',
+)
+
+
+add(slide('Functions as boxes',
+  parentCenter(table(
+    [
+      ytable(
+        '$c = a + b$',
+        overlay(
+          operation = T(opPlus,
+            C('$\\frac{\\partial c}{\\partial a} = 1$', Leaf('$a$')),
+            C('$\\frac{\\partial c}{\\partial b} = 1$', Leaf('$b$')),
+          ).margin(300, 50),
+          moveLeftOf('$c$', operation.headBox),
+        ),
+      ).center().margin(10),
+      ytable(
+        '$c = a \\cdot b$',
+        overlay(
+          operation = T(opDot,
+            C('$\\frac{\\partial c}{\\partial a} = b$', Leaf('$a$')),
+            C('$\\frac{\\partial c}{\\partial b} = a$', Leaf('$b$')),
+          ).margin(300, 50),
+          moveLeftOf('$c$', operation.headBox),
+        ),
+      ).center().margin(10),
+    ],
+    [
+      ytable(
+        std('$(a + \\red{\\epsilon}) + b = c + \\green{1} \\red{\\epsilon}$').atomicMouseShowHide(false),
+        '$a + (b + \\red{\\epsilon}) = c + \\green{1} \\red{\\epsilon}$',
+      ),
+      ytable(
+        std('$(a + \\red{\\epsilon}) b = c + \\green{b} \\red{\\epsilon}$').atomicMouseShowHide(false),
+        '$a (b + \\red{\\epsilon}) = c + \\green{a} \\red{\\epsilon}$',
+      ),
+    ],
+  ).margin(100, 50).center()),
+  stmt('Gradients: how much does $c$ change if $a$ or $b$ changes?'),
+));
+
+prose(
+  'The first conceptual step is to think of functions as boxes',
+  'that take a set of inputs and produces an output.',
+  _,
+  'For example, take $c = a + b$.',
+  'The key question is: if we perturb $a$ by a small amount $\\epsilon$,',
+  'how much does the output $c$ change?',
+  'In this case, the output $c$ is also perturbed by $1 \\epsilon$,',
+  'so the gradient (partial derivative) is $1$.',
+  'We put this gradient on the edge.',
+  _,
+  'We can handle $c = a \\cdot b$ in a similar way.',
+  _,
+  'Intuitively, the gradient is a measure of local sensivity:',
+  'how much input perturbations get amplified when they go through the various functions.',
+);
+
+add(slide('Basic building blocks',
+  computationGraphAtoms(),
+).leftHeader(image('images/blocks.jpg')));
+
+prose(
+  'Here are some more examples of simple functions and their gradients.',
+  'Let\'s walk through them together.',
+  _,
+  'These should be familiar from basic calculus.',
+  'All we\'ve done is present them in a visually more intuitive way.',
+  _,
+  'For the max function, changing $a$ only impacts the max iff $a > b$; and analogously for $b$.',
+  _,
+  'For the logistic function $\\sigma(z) = \\frac{1}{1 + e^{-z}}$,',
+  'a bit of algebraic elbow grease produces the gradient.',
+  'You can check that the gradient is zero when $|a| \\to \\infty$.',
+  _,
+  'It turns out that these simple functions are all we need to build up',
+  'many of the more complex',
+  'and potentially scarier looking functions that we\'ll encounter.',
+);
+
+add(slide('Function composition',
+  parentCenter(overlay(
+    out = T(
+      opSquare, C('$\\frac{\\partial c}{\\partial b} = 2b$',
+      mid = T(opSquare, C('$\\frac{\\partial b}{\\partial a} = 2a$', Leaf('$a$')))),
+    ).recymargin(100),
+    moveLeftOf('$c$', out.headBox),
+    moveLeftOf('$b$', mid.headBox),
+  )),
+  stmt('Chain rule'),
+  parentCenter(std('$\\green{\\frac{\\partial c}{\\partial a} = \\frac{\\partial c}{\\partial b} \\frac{\\partial b}{\\partial a}} = (2b) (2a) = (2a^2) (2a) = 4 a^3$').atomicMouseShowHide(false)),
+).leftHeader(image('images/castle.jpg')));
+
+prose(
+  'Given these building blocks, we can now put them together to create more complex functions.',
+  _,
+  'Consider applying some function (e.g., squared) to $a$ to get $b$,',
+  'and then applying some other function (e.g., squared) to get $c$.',
+  _,
+  'What is the gradient of $c$ with respect to $a$?',
+  _,
+  'We know from our building blocks the gradients on the edges.',
+  _,
+  'The final answer is given by the <b>chain rule</b> from calculus:',
+  'just multiply the two gradients together.',
+  _,
+  'You can verify that this yields the correct answer $(2b) (2a) = 4 a^3$.',
+  _,
+  'This visual intuition will help us better understand more complex functions.',
+);
+
+add(slide('Linear classification with hinge loss',
+  parentCenter(xtable(
+    overlay(
+      T(loss = text(opMax),
+        C('$\\1[1-\\text{margin} > 0]$', T(text(opMinus),
+          Leaf('$1$'),
+          C('$-1$', T(margin = text(opDot),
+            C('$y$', T(score = text(opDot), C('$\\phi(x)$', Leaf('$\\red{\\w}$')), Leaf('$\\phi(x)$'))),
+            Leaf('$y$'),
+          )),
+        )),
+        Leaf('$0$'),
+      ),
+      moveLeftOf('loss', loss),
+      moveLeftOf('margin', margin),
+      moveLeftOf('score', score),
+    ).scale(0.9),
+    ytable(
+      nowrapText('$\\Loss(x, y, \\red{\\w}) = \\max \\{ 1 - \\red{\\w} \\cdot \\phi(x) y, 0 \\}$'),
+      nowrapText('$\\nabla_{\\red{\\w}} \\Loss(x, y, \\red{\\w}) = \\green{-\\1[\\text{margin} < 1] \\phi(x) y}$').atomicMouseShowHide(false),
+      indent(frameBox(computationGraphAtoms()).scale(0.7).atomicMouseShowHide(true)),
+    ).margin(50),
+  ).center().margin(50).scale(0.9)),
+));
+
+prose(
+  'Now let\'s turn to our first real-world example: the hinge loss for linear classification.',
+  'We already computed the gradient before, but let\'s do it using computation graphs.',
+  _,
+  'We can construct the computation graph for this expression, proceeding bottom up.',
+  'At the leaves are the inputs and the constants.',
+  'Each internal node is labeled with the operation (e.g., $\\cdot$) and is labeled with a variable naming that subexpression (e.g., margin).',
+  _,
+  'In red, we have highlighted the weights $\\w$ with respect to which we want to take the gradient.',
+  'The central question is how small perturbations in $\\w$ affect a change in the output (loss).',
+  _,
+  'We can examine each edge from the path from $\\w$ to loss,',
+  'and compute the gradient using our handy reference of building blocks.',
+  _,
+  'The actual gradient is the product of the edge-wise gradients from $\\w$ to the loss output.',
+);
+
+add(slide('Two-layer neural networks',
+  parentCenter(xtable(
+    neuralNetworkGradientDiagram().scale(0.7),
+    ytable(
+      nowrapText('$\\displaystyle \\Loss(x, y, \\red{\\V}, \\red{\\w}) = \\left(\\red{\\w} \\cdot \\sigma(\\red{\\V} \\phi(x)) - y\\right)^2$'),
+      nil(),
+      nowrapText('$\\nabla_{\\red{\\w}} \\Loss(x, y, \\red{\\V}, \\red{\\w}) = \\green{2 (\\text{residual}) \\h}$').atomicMouseShowHide(false),
+      nowrapText('$\\nabla_{\\red{\\V}} \\Loss(x, y, \\red{\\V}, \\red{\\w}) = \\green{2 (\\text{residual}) \\w \\circ \\h \\circ (1 - \\h) \\phi(x)^\\top}$').atomicMouseShowHide(false),
+      indent(frameBox(computationGraphAtoms()).scale(0.7).atomicMouseShowHide(true)),
+    ).scale(0.7).margin(30),
+  ).center().margin(50)),
+));
+
+prose(
+  'We now finally turn to neural networks, but the idea is essentially the same.',
+  _,
+  'Specifically, consider a two-layer neural network driving the squared loss.',
+  _,
+  'Let us build the computation graph bottom up.',
+  _,
+  'Now we need to take the gradient with respect to $\\w$ and $\\V$.',
+  'Again, these are just the product of the gradients on the paths from $\\w$ or $\\V$ to the loss node at the root.',
+  _,
+  'Note that the two gradients have in common the the first two terms.',
+  'Common paths result in common subexpressions for the gradient.',
+  _,
+  'There are some technicalities when dealing with vectors worth mentioning:',
+  'First, the $\\circ$ in $\\h \\circ (1 - \\h)$ is elementwise multiplication (not the dot product),',
+    'since the non-linearity $\\sigma$ is applied elementwise.',
+    _,
+    'Second, notice the transpose for the gradient expression with respect to $\\V$.',
+    'this looks a bit unusual, but it happens because unlike everything weve done, V is a matrix (not a vector)',
+    'and we are actually taking jacobians because $\\V \\phi(x)$ is a vector-valued function.',
+    _,
+    'You can work through this by hand, but to see that this is right, notice that the gradient of V needs to have the same dimensions as V',
+    'and this transpose gives this the right dimension.',
+  _,
+  'This computation graph also highlights the modularity of hypothesis class and loss function.',
+  'You can pick any hypothesis class (linear predictors or neural networks) to drive the score,',
+  'and the score can be fed into any loss function (squared, hinge, etc.).',
+);
+
+add(slide('Backpropagation',
+  parentCenter(xtable(
+    concreteLinearRegressionGradientDiagram().scale(0.6),
+    ytable(
+      std('$\\Loss(x, y, \\w) = (\\w \\cdot \\phi(x) - y)^2$').scale(0.9),
+      ytable(
+        std('$\\orange{\\w = [3, 1], \\phi(x) = [1, 2], y = 2}$'),
+        withRight(bigDownArrow(50), bold('backpropagation')),
+        '$\\purple{\\nabla_\\w \\Loss(x, y, \\w) = [6, 12]}$',
+      ).center().scale(0.7),
+      definition('Forward/backward values',
+        nowrapText(stmt('Forward: $\\orange{f_i}$ is value for subexpression rooted at $i$')),
+        nowrapText(stmt('Backward: $\\purple{g_i} = \\frac{\\partial \\text{loss}}{\\partial f_i}$ is how $f_i$ influences loss')),
+      ).scale(0.8),
+    ).center().margin(30),
+  ).center().margin(50)),
+  parentCenter(algorithm('backpropagation algorithm',
+    stmt('Forward pass: compute each $f_i$ (from leaves to root)'),
+    stmt('Backward pass: compute each $g_i$ (from root to leaves)'),
+  ).scale(0.8)),
+));
+
+prose(
+  'So far, we have mainly used the graphical representation to visualize the computation',
+  'of function values and gradients for our conceptual understanding.',
+  _,
+  'Now let us introduce the <b>backpropagation</b> algorithm,',
+  'a general procedure for computing gradients given only the specification of the function.',
+  _,
+  'Let us go back to the simplest example: linear regression with the squared loss.',
+  _,
+  'All the quantities that we\'ve been computing have been so far symbolic,',
+  'but the actual algorithm works on real numbers and vectors.',
+  'So let\'s use concrete values to illustrate the backpropagation algorithm.',
+  _,
+  'The backpropagation algorithm has two phases: forward and backward.',
+  'In the forward phase, we compute a <b>forward value</b> $f_i$ for each node,',
+    'coresponding to the evaluation of that subexpression.',
+    _,
+  'Let\'s work through the example.',
+  _,
+  'In the backward phase, we compute a <b>backward value</b> $g_i$ for each node.',
+  'This value is the gradient of the loss with respect to that node,',
+  'which is also the product of all the gradients on the edges from the node to the root.',
+  'To compute this backward value, we simply take the parent\'s backward value and multiply by the gradient on the edge to the parent.',
+  'Let\'s work through the example.',
+  _,
+  'Note that both $f_i$ and $g_i$ can either be scalars, vectors, or matrices,',
+  'but have the same dimensionality.',
+);
+
+add(slide('A note on optimization',
+  parentCenter('$\\min_{\\V, \\w} \\TrainLoss(\\V, \\w)$'),
+  parentCenter(table(
+    ['Linear predictors', 'Neural networks'].map(darkblue),
+    [image('images/convex-function.jpeg'), image('images/nonconvex-function.jpeg')],
+    ['(convex)', '(non-convex)'],
+  ).center().margin(50, 5)),
+  modulebox('Optimization of neural networks is in principle hard'),
+));
+
+prose(
+  'So now we can apply the backpropagation algorithm and compute gradients,',
+  'stick them into stochastic gradient descent,',
+  'and get some answer out.',
+  _,
+  'One question which we haven\'t addressed is whether stochastic gradient descent will work in the sense of actually finding the weights that minimize the training loss.',
+  _,
+  'For linear predictors (using the squared loss or hinge loss),',
+  '$\\TrainLoss(\\w)$ is a convex function,',
+  'which means that SGD (with an appropriate step size)',
+  'is theoretically guaranteed to converge to the global optimum.',
+  _,
+  'However, for neural networks,',
+  '$\\TrainLoss(\\V, \\w)$ is typically non-convex',
+  'which means that there are multiple local optima,',
+  'and SGD is not guaranteed to converge to the global optimum.',
+  'There are many settings that SGD fails both theoretically and empirically,',
+  'but in practice, SGD on neural networks can work much better than theory would predict,',
+  'provided certain precautions are taken.',
+  'The gap between theory and practice is not well understood and an active area of research.',
+);
+
+add(slide('How to train neural networks',
+  parentCenter(xtable(
+    parentCenter(xtable(
+      '$\\text{score} =$',
+      vectorBox('$\\w$', 1, 3, 'red'),
+      '$\\cdot$',
+      '$\\sigma($',
+      vectorBox('$\\V$', 3, 6, 'red'),
+      vectorBox('$\\phi(x)$', 6, 1, 'green'),
+      '$)$',
+    ).center().margin(5)).atomicMouseShowHide(true),
+    image('images/nonconvex-function.jpeg'),
+  ).center().margin(100)),
+  bulletedText('Careful initialization (random noise, pre-training)'),
+  bulletedText('Overparameterization (more hidden units than needed)'),
+  bulletedText('Adaptive step sizes (AdaGrad, Adam)'),
+  //bulletedText('Dropout to guard against overfitting'),
+  //bulletedText('Batch normalization'),
+  modulebox('Don\'t let gradients vanish or explode!'),
+));
+
+prose(
+  'Training a neural network is very much like driving stick.',
+  'In practice, there are some "tricks" that are needed to make things work properly.',
+  'Just to name a few to give you a sense of the considerations:',
+  _,
+  'Initialization (where you start the weights) matters for non-convex optimization.',
+  'Unlike for linear models, you can\'t start at zero or else all the subproblems will be the same (all rows of $\\V$ will be the same).',
+  'Instead, you want to initialize with a small amount of random noise.',
+  _,
+  'It is common to use overparameterized neural networks,',
+  'ones with more hidden units ($k$) than is needed, because',
+  'then there are more "chances" that some of them will pick out on the right signal,',
+  'and it is okay if some of the hidden units become "dead".',
+  _,
+  'There are small but important extensions of stochastic gradient descent',
+  'that allow the step size to be tuned per weight.',
+  _,
+  'Perhaps one high-level piece of advice is that when training a neural network,',
+  'it is important to monitor the gradients.',
+  'If they vanish (get too small), then training won\'t make progress.',
+  'If they explode (get too big), then training will be unstable.',
+);
+
+add(summarySlide('Summary',
+  parentCenter(neuralNetworkGradientDiagram().scale(0.5)).atomicMouseShowHide(true),
+  bulletedText('Computation graphs: visualize and understand gradients'),
+  bulletedText('Backpropagation: general-purpose algorithm for computing gradients'),
+));
+
+prose(
+  'The most important concept in this part of the lecture is the idea of a <b>computation graph</b>,',
+  'which allows us to represent arbitrary mathematical expressions,',
+  'by utilizing simple building blocks.',
+  'They hopefully have given you a more visual and better understanding of what gradients are about.',
+  _,
+  'The <b>backpropagation</b> algorithm allows us to simply write down an expression,',
+  'and never have to take a gradient manually again.',
+  'However, it is still important to understand how the gradient arises,',
+  'so that when you try to train a deep neural network and your gradients vanish,',
+  'you know how to think about debugging your network.',
+  _,
+  'The generality of computation graphs and backpropagation',
+  'makes it possible to iterate very quickly on new types of models and loss functions',
+);
+
+
+
+
+sfig.initialize();
