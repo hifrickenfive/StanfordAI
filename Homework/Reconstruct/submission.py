@@ -13,15 +13,15 @@ class SegmentationProblem(util.SearchProblem):
         self.query = query
         self.unigramCost = unigramCost
 
+    # State Definition: (current idx in the queryWords list)
+
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
-        # return self.query[0] # return actual value
-        return 0 # return the index in the queried string (zero-based)
+        return 0 
         # END_YOUR_CODE
 
     def isEnd(self, state) -> bool:
         # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-        # return state == self.query # return the full length of the string
         return state == len(self.query)
         # END_YOUR_CODE
 
@@ -34,7 +34,7 @@ class SegmentationProblem(util.SearchProblem):
         result = []
         for newState, action in actions:
             cost = self.unigramCost(action)
-            result.append((action, newState, cost)) # to get unpacked by solve function in util.py
+            result.append((action, newState, cost)) # action, newState, cost
         return result
         # END_YOUR_CODE
 
@@ -60,7 +60,7 @@ class VowelInsertionProblem(util.SearchProblem):
         self.bigramCost = bigramCost
         self.possibleFills = possibleFills
 
-    # State: (current idx i, previous word)
+    # State Definition: (current idx in the queryWords list, previous chosen word)
 
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
@@ -89,10 +89,9 @@ class VowelInsertionProblem(util.SearchProblem):
         results = []
         for action in actions:
             cost = self.bigramCost(prevWrd, action)
-            results.append((action, (currIdx+1, action), cost)) #action, newState, cost
+            results.append((action, (currIdx+1, action), cost)) # action, newState, cost
         return results
         # END_YOUR_CODE
-
 
 def insertVowels(queryWords: List[str], bigramCost: Callable[[str, str], float],
         possibleFills: Callable[[str], Set[str]]) -> str:
