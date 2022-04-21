@@ -62,12 +62,15 @@ class VowelInsertionProblem(util.SearchProblem):
 
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
-        return (self.queryWords[0], self.queryWords[1])
+        return ('-BEGIN-', self.queryWords[0])
         # END_YOUR_CODE
 
     def isEnd(self, state) -> bool:
         # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-        return state == (self.queryWords[-2], self.queryWords[-1])
+        if len(self.queryWords) == 1 or 0:
+            return True
+        else:
+            return state == (self.queryWords[-2], self.queryWords[-1])
         # END_YOUR_CODE
 
     def succAndCost(self, state):
@@ -95,7 +98,7 @@ def insertVowels(queryWords: List[str], bigramCost: Callable[[str, str], float],
         return ''
 
     ucs = util.UniformCostSearch(verbose=0)
-    ucs.solve(VowelInsertionProblem(queryWords, bigramCost))
+    ucs.solve(VowelInsertionProblem(queryWords, bigramCost, possibleFills))
 
     return ' '.join(ucs.actions)
     # END_YOUR_CODE

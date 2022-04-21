@@ -5,27 +5,25 @@ import graderUtil
 
 
 # Load doc. Set up language model
-path2doc = 'leo-will.txt'
-unigramCost, bigramModel = makeLanguageModels(path2doc)
+corpus = 'leo-will.txt'
+possibleFills = wordsegUtil.makeInverseRemovalDictionary(corpus, 'aeiou')
+print(possibleFills('hll'))
 
-# Define instance
-query = 'word'
-# query = 'twowords'
-query = 'andthreewords'
-print(len(query))
-test = SegmentationProblem(query, unigramCost)
+queryWords = 'wld lk t hv mr lttrs'.split()
+print(queryWords)
 
-# Check my succAndCost
-# answer = test.succAndCost(0)
-# print(answer)
+def bigramCost(a, b):
+    corpus = [wordsegUtil.SENTENCE_BEGIN] + 'beam me up scotty'.split()
+    if (a, b) in list(zip(corpus, corpus[1:])):
+        return 1.0
+    else:
+        return 1000.0
 
+# Check State Definitions
+testObj = VowelInsertionProblem(queryWords, bigramCost, possibleFills)
+print(testObj.isEnd((queryWords[-2],queryWords[-1])))
 
-grader = graderUtil.Grader()
-submission = grader.load('submission')
-# answer = submission.segmentWords('word', unigramCost)
-# print(answer)
-
-ucs = util.UniformCostSearch(verbose=0)
-ucs.solve(SegmentationProblem(query, unigramCost))
-print(ucs.actions)
-
+# Check Final Answer
+# ucs = util.UniformCostSearch(verbose=0)
+# ucs.solve(VowelInsertionProblem(queryWords, bigramCost, possibleFills))
+# print(' '.join(ucs.actions))
