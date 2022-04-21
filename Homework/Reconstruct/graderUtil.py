@@ -239,7 +239,7 @@ class Grader:
             gc.collect()
             self.fail('Memory limit exceeded.')
         except TimeoutFunctionException:
-            signal.alarm(0)
+#           signal.alarm(0)
             self.fail('Time limit (%s seconds) exceeded.' % part.max_seconds)
         except Exception as e:
 #            signal.alarm(0)

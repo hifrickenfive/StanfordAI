@@ -60,7 +60,7 @@ class VowelInsertionProblem(util.SearchProblem):
         self.bigramCost = bigramCost
         self.possibleFills = possibleFills
 
-    # Define State as: (current idx in queryWords, previous word solved with vowels)
+    # State: (current idx i, previous word)
 
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
@@ -80,15 +80,16 @@ class VowelInsertionProblem(util.SearchProblem):
 
         currIdx = state[0]
         currWrd = self.queryWords[currIdx]
+        prevWrd = state[1]
 
         actions = self.possibleFills(currWrd)
         if len(actions) == 0:
-            actions = set(currWrd)
+            actions = {currWrd}
 
         results = []
         for action in actions:
-            cost = self.bigramCost(state[0], state[1])
-            results.append((action, (currIdx+1, action ), cost))
+            cost = self.bigramCost(prevWrd, action)
+            results.append((action, (currIdx+1, action), cost)) #action, newState, cost
         return results
         # END_YOUR_CODE
 
