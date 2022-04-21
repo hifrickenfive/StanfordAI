@@ -15,19 +15,28 @@ class SegmentationProblem(util.SearchProblem):
 
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # return self.query[0] # return actual value
+        return 0 # return the index in the queried string (zero-based)
         # END_YOUR_CODE
 
     def isEnd(self, state) -> bool:
         # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # return state == self.query # return the full length of the string
+        return state == len(self.query)
         # END_YOUR_CODE
 
     def succAndCost(self, state):
         # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        actions = []
+        for i in range(state, len(self.query)+1):
+            actions.append((i, self.query[state:i]))
+        
+        result = []
+        for newState, action in actions:
+            cost = self.unigramCost(action)
+            result.append((action, newState, cost)) # to get unpacked by solve function in util.py
+        return result
         # END_YOUR_CODE
-
 
 def segmentWords(query: str, unigramCost: Callable[[str], float]) -> str:
     if len(query) == 0:
@@ -37,7 +46,7 @@ def segmentWords(query: str, unigramCost: Callable[[str], float]) -> str:
     ucs.solve(SegmentationProblem(query, unigramCost))
 
     # BEGIN_YOUR_CODE (our solution is 3 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    return ' '.join(ucs.actions)
     # END_YOUR_CODE
 
 
@@ -53,24 +62,42 @@ class VowelInsertionProblem(util.SearchProblem):
 
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        return (self.queryWords[0], self.queryWords[1])
         # END_YOUR_CODE
 
     def isEnd(self, state) -> bool:
         # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        return state == (self.queryWords[-2], self.queryWords[-1])
         # END_YOUR_CODE
 
     def succAndCost(self, state):
         # BEGIN_YOUR_CODE (our solution is 8 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+
+        # Assume no same phrases otherwise this doesn't work
+        currIdx = self.queryWords.index(state[1]) 
+
+        actions = self.possibleFills(state[1])
+        if len(actions) == 0:
+            actions = [self.state[1]]
+
+        results = []
+        for action in actions:
+            cost = self.bigramCost(state[0], state[1])
+            results.append((action, (state[1], self.queryWords[currIdx+1]), cost))
+        return results
         # END_YOUR_CODE
 
 
 def insertVowels(queryWords: List[str], bigramCost: Callable[[str, str], float],
         possibleFills: Callable[[str], Set[str]]) -> str:
     # BEGIN_YOUR_CODE (our solution is 3 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    if len(queryWords) == 0:
+        return ''
+
+    ucs = util.UniformCostSearch(verbose=0)
+    ucs.solve(VowelInsertionProblem(queryWords, bigramCost))
+
+    return ' '.join(ucs.actions)
     # END_YOUR_CODE
 
 

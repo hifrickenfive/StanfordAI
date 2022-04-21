@@ -242,7 +242,7 @@ class Grader:
             signal.alarm(0)
             self.fail('Time limit (%s seconds) exceeded.' % part.max_seconds)
         except Exception as e:
-            signal.alarm(0)
+#            signal.alarm(0)
             self.fail('Exception thrown: %s -- %s' % (str(type(e)), str(e)))
             self.print_exception()
         except SystemExit:
