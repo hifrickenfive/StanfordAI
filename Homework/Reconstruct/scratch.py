@@ -9,7 +9,7 @@ corpus = 'leo-will.txt'
 possibleFills = wordsegUtil.makeInverseRemovalDictionary(corpus, 'aeiou')
 print(possibleFills('hll'))
 
-queryWords = 'wld lk t hv mr lttrs'.split()
+queryWords = 'zz$z$zz'
 print(queryWords)
 
 def bigramCost(a, b):
@@ -21,7 +21,8 @@ def bigramCost(a, b):
 
 # Check State Definitions
 testObj = VowelInsertionProblem(queryWords, bigramCost, possibleFills)
-print(testObj.isEnd((queryWords[-2],queryWords[-1])))
+print(testObj.isEnd((0, '-BEGIN-')))
+print(testObj.startState())
 
 # Check Final Answer
 # ucs = util.UniformCostSearch(verbose=0)
