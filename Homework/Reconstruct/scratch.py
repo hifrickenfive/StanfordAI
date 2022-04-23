@@ -1,6 +1,6 @@
-from util import *
-from submission import *
-from wordsegUtil import *
+import util
+import submission
+# from wordsegUtil import *
 import graderUtil
 import grader
 
@@ -20,22 +20,21 @@ import grader
 # # ucs.solve(VowelInsertionProblem(queryWords, bigramCost, possibleFills))
 # # print(' '.join(ucs.actions))
 
-_, bigramCost, possibleFills = grader.getRealCosts()
+def bigramCost(a, b):
+    if b in ['and', 'two', 'three', 'word', 'words']:
+        return 1.0
+    else:
+        return 1000.0
 
-QUERIES_INS = [
-    'strng',
-    'pls',
-    'hll thr',
-    'whats up',
-    'dudu and the prince',
-    'frog and the king',
-    'ran with the queen and swam with jack',
-    'light bulbs need change',
-    'ffcr nd prnc ndrw',
-    'ffcr nd shrt prnc',
-    'ntrntnl',
-    'smthng',
-    'btfl',
-]
-
+fills_ = {
+    'nd': set(['and']),
+    'tw': set(['two']),
+    'thr': set(['three']),
+    'wrd': set(['word']),
+    'wrds': set(['words']),
+}
+fills = lambda x: fills_.get(x, set())
 ucs = util.UniformCostSearch(verbose=0)
+ucs.solve(submission.JointSegmentationInsertionProblem('ndthrwrds', bigramCost, fills))
+actionSeq = ucs.actions
+print(actionSeq)

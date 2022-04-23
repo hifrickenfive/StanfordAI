@@ -139,7 +139,7 @@ class JointSegmentationInsertionProblem(util.SearchProblem):
         results = []
         n = len(self.query)
         for i in range(startIdx, len(self.query)):
-            actions = self.possibleFills(self.query[startIdx:startIdx+i+1])
+            actions = self.possibleFills(self.query[startIdx:i+1])
             for action in actions:
                 results.append((action, (i+1, action), self.bigramCost(prevWord, action)))
 
