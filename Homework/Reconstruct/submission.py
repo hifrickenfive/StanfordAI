@@ -116,19 +116,34 @@ class JointSegmentationInsertionProblem(util.SearchProblem):
         self.bigramCost = bigramCost
         self.possibleFills = possibleFills
 
+    # State Definition: (current idx in the query string, previous chosen word)
+
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        return (0, '-BEGIN-')
         # END_YOUR_CODE
 
     def isEnd(self, state) -> bool:
         # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        if len(self.query) == 0:
+            return True
+        else:
+            return state[0] == len(self.query) # stop after final word transformed
         # END_YOUR_CODE
 
     def succAndCost(self, state):
         # BEGIN_YOUR_CODE (our solution is 14 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        startIdx = state[0]
+        prevWord = state[1]
+
+        results = []
+        n = len(self.query)
+        for i in range(startIdx, len(self.query)):
+            actions = self.possibleFills(self.query[startIdx:startIdx+i+1])
+            for action in actions:
+                results.append((action, (i+1, action), self.bigramCost(prevWord, action)))
+
+        return results
         # END_YOUR_CODE
 
 
@@ -138,7 +153,13 @@ def segmentAndInsert(query: str, bigramCost: Callable[[str, str], float],
         return ''
 
     # BEGIN_YOUR_CODE (our solution is 4 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    ucs = util.UniformCostSearch(verbose=0)
+    ucs.solve(JointSegmentationInsertionProblem(query, bigramCost, possibleFills))
+    actionSeq = ucs.actions
+    if len(actionSeq) == 1:
+        return actionSeq[0]
+    else:
+        return ' '.join(ucs.actions)
     # END_YOUR_CODE
 
 

@@ -39,10 +39,3 @@ QUERIES_INS = [
 ]
 
 ucs = util.UniformCostSearch(verbose=0)
-for query in QUERIES_INS:
-    query = wordsegUtil.cleanLine(query)
-    ws = [wordsegUtil.removeAll(w, 'aeiou') for w in wordsegUtil.words(query)]
-    ucs.solve(VowelInsertionProblem(ws, bigramCost, possibleFills))
-    print(ws)
-    print(' '.join(ucs.actions))
-    print('\n')
