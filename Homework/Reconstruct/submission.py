@@ -137,9 +137,10 @@ class JointSegmentationInsertionProblem(util.SearchProblem):
         prevWord = state[1]
 
         results = []
-        n = len(self.query)
         for i in range(startIdx, len(self.query)):
             actions = self.possibleFills(self.query[startIdx:i+1])
+            # Exclude words that only contain vowels
+            # Exclude out of vocab words - all words should include at least one consonant from input string
             for action in actions:
                 results.append((action, (i+1, action), self.bigramCost(prevWord, action)))
 
@@ -155,11 +156,7 @@ def segmentAndInsert(query: str, bigramCost: Callable[[str, str], float],
     # BEGIN_YOUR_CODE (our solution is 4 lines of code, but don't worry if you deviate from this)
     ucs = util.UniformCostSearch(verbose=0)
     ucs.solve(JointSegmentationInsertionProblem(query, bigramCost, possibleFills))
-    actionSeq = ucs.actions
-    if len(actionSeq) == 1:
-        return actionSeq[0]
-    else:
-        return ' '.join(ucs.actions)
+    return ' '.join(ucs.actions)
     # END_YOUR_CODE
 
 
