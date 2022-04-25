@@ -1,6 +1,7 @@
 import collections
 import math
 from typing import Set, Callable, List, Iterable, Iterator, Tuple
+from xml.dom.expatbuilder import theDOMImplementation
 
 SENTENCE_BEGIN = '-BEGIN-'
 

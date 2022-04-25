@@ -64,7 +64,7 @@ class VowelInsertionProblem(util.SearchProblem):
 
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
-        return (0, '-BEGIN-')
+        return (0, wordsegUtil.SENTENCE_BEGIN)
         # END_YOUR_CODE
 
     def isEnd(self, state) -> bool:
@@ -120,7 +120,7 @@ class JointSegmentationInsertionProblem(util.SearchProblem):
 
     def startState(self):
         # BEGIN_YOUR_CODE (our solution is 1 line of code, but don't worry if you deviate from this)
-        return (0, '-BEGIN-')
+        return (0, wordsegUtil.SENTENCE_BEGIN)
         # END_YOUR_CODE
 
     def isEnd(self, state) -> bool:
@@ -139,10 +139,16 @@ class JointSegmentationInsertionProblem(util.SearchProblem):
         results = []
         for i in range(startIdx, len(self.query)):
             actions = self.possibleFills(self.query[startIdx:i+1])
-            # Exclude words that only contain vowels
-            # Exclude out of vocab words - all words should include at least one consonant from input string
             for action in actions:
-                results.append((action, (i+1, action), self.bigramCost(prevWord, action)))
+                # Check if only vowels
+                onlyVowels = True
+                for char in action:
+                    if char not in 'aeiou':
+                        onlyVowels = False
+                if onlyVowels or action == self.query[startIdx:i+1]:
+                    continue # Exclude onlyVowels and out-of-vocab words
+                else:
+                    results.append((action, (i+1, action), self.bigramCost(prevWord, action)))
 
         return results
         # END_YOUR_CODE

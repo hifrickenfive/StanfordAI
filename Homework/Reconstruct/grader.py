@@ -29,7 +29,7 @@ QUERIES_INS = [
     'pls',
     'hll thr',
     'whats up',
-    'dudu and the prince',
+    'dudu and the prince', 
     'frog and the king',
     'ran with the queen and swam with jack',
     'light bulbs need change',
