@@ -51,30 +51,32 @@ class BlackjackMDP(util.MDP):
     # tuples in the same order.
     def succAndProbReward(self, state: Tuple, action: str) -> List[Tuple]:
         # BEGIN_YOUR_CODE (our solution is 38 lines of code, but don't worry if you deviate from this)
-        
-        # Return (newState, prob, reward)
+        """Return (newState, prob, reward)"""
 
         # Initialise
-        currentSum, prevPeekVal, remainingCards = state
-        numRemainingCards = sum(remainingCards)
         newState = []
         succStateProbRewards = []
 
-        # Check inputs
-        if numRemainingCards == 0: # No cards left
-            return (newState, 0, 0)
+        # Unpack state
+        currentSum, prevPeekVal, remainingCards = state
+
+        # Check remainingCards
+        if remainingCards == None:
+             return [(newState, 0, None)]
+        else:
+            numRemainingCards = sum(remainingCards)
 
         if action == 'Quit':
             newState = (0, None, None)
-            return (newState, None, currentSum)
+            return [(newState, None, currentSum)]
         
         if action == 'Peek':
             if not prevPeekVal == None: # Reject double peek
                 newState = []
-                return (newState, None, remainingCards)
+                return [(newState, None, remainingCards)]
             for idx, _ in enumerate(remainingCards):
                 probability = remainingCards[idx] / numRemainingCards
-                succStateProbRewards.append((currentSum, idx, remainingCards), probability, 0)
+                succStateProbRewards.append(((currentSum, idx, remainingCards), probability, 0))
             return succStateProbRewards
 
         if action == 'Take':
@@ -83,8 +85,9 @@ class BlackjackMDP(util.MDP):
                 if not cardCount:
                     continue
 
-                # Update currentSum
+                # Update currentSum, eval probability
                 newSum = currentSum + self.cardValues[idx]
+                probability = remainingCards[idx] / numRemainingCards
 
                 # Update remainingCards
                 _remainingCards = list(remainingCards)
@@ -93,12 +96,12 @@ class BlackjackMDP(util.MDP):
 
                 # Checks
                 if newSum > self.threshold: # Bust
-                    newState.append((newSum, None, None))
+                    succStateProbRewards.append(((newSum, None, None), probability, 0))
                 elif numRemainingCards == 0: # No cards left
-                    newState.append((newSum, None, None))
+                    succStateProbRewards.append(((0, None, None), 0, newSum))
                 else:
-                    newState.append((newSum, None, newRemainingCards))
-            return newState
+                    succStateProbRewards.append(((newSum, None, newRemainingCards), probability, 0))
+            return succStateProbRewards
 
         # END_YOUR_CODE
 

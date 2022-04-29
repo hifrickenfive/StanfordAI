@@ -1,9 +1,13 @@
+# import submission
 from sympy import multiplicity
 import util, math, random
 from collections import defaultdict
 from util import ValueIteration
 from typing import List, Callable, Tuple, Any
-import submission
+import graderUtil
+
+grader = graderUtil.Grader()
+submission = grader.load('submission')
 
 mdp1 = submission.BlackjackMDP(cardValues=[1, 5], multiplicity=2,
                                 threshold=10, peekCost=1)

@@ -3,7 +3,11 @@ import util, math, random
 from collections import defaultdict
 from util import ValueIteration
 from typing import List, Callable, Tuple, Any
-import submission
+import graderUtil
+
+
+grader = graderUtil.Grader()
+submission = grader.load('submission')
 
 cardValues = [1,2,3]
 multiplicity = 1
@@ -12,36 +16,35 @@ peekCost = 10
 test = submission.BlackjackMDP(cardValues, multiplicity, threshold, peekCost)
 
 
-
 # Peek
 currentState = (0, None, (1,1,1))
 result = test.succAndProbReward(currentState, 'Peek')
-assert result == [(0, 0, (1, 1, 1)), (0, 1, (1, 1, 1)), (0, 2, (1, 1, 1))]
+print(result)
 
 # Peek
 currentState = (0, 1, (1,1,1))
 result = test.succAndProbReward(currentState, 'Peek')
-assert result == []
+print(result)
 
 # Quit
 currentState = (0, None, (1,1,1))
 result = test.succAndProbReward(currentState, 'Peek')
-assert result == [(0, 0, (1, 1, 1)), (0, 1, (1, 1, 1)), (0, 2, (1, 1, 1))]
+print(result)
 
 # Take start
 currentState = (0, None, (1,1,1))
 result = test.succAndProbReward(currentState, 'Take')
-assert result == [(1, None, (0, 1, 1)), (2, None, (1, 0, 1)), (3, None, (1, 1, 0))]
+print(result)
 
 # Take ok
 currentState = (1, None, (1,1,1))
 result = test.succAndProbReward(currentState, 'Take')
-assert result == [(2, None, (0, 1, 1)), (3, None, (1, 0, 1)), (4, None, (1, 1, 0))]
+print(result)
 
 # Take bust
 currentState = (3, None, (1,1,1))
 result = test.succAndProbReward(currentState, 'Take')
-assert result == [(4, None, (0, 1, 1)), (5, None, None), (6, None, None)]
+print(result)
 
 # Take last card
 currentState = (3, None, (1,0,0))
