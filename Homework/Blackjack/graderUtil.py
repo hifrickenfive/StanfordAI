@@ -255,7 +255,7 @@ class Grader:
         part.seconds = (end_time - start_time).seconds
         ###### quick fix to pacman problem 4 ######
         if part.seconds > part.max_seconds:
-            signal.alarm(0)
+            # signal.alarm(0)
             self.fail('Time limit (%s seconds) exceeded.' % part.max_seconds)
         ###### quick fix to pacman problem 4 ######
         if part.is_hidden() and not self.useSolution:

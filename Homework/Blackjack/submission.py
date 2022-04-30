@@ -51,7 +51,7 @@ class BlackjackMDP(util.MDP):
     # tuples in the same order.
     def succAndProbReward(self, state: Tuple, action: str) -> List[Tuple]:
         # BEGIN_YOUR_CODE (our solution is 38 lines of code, but don't worry if you deviate from this)
-        """Return (newState, prob, reward)"""
+        """Return (newState, probability, reward)"""
 
         # Initialise
         newState = []
@@ -61,22 +61,21 @@ class BlackjackMDP(util.MDP):
         currentSum, prevPeekVal, remainingCards = state
 
         # Check remainingCards
-        if remainingCards == None:
-             return [(newState, 0, None)]
+        if remainingCards is None:
+             return []
         else:
             numRemainingCards = sum(remainingCards)
 
         if action == 'Quit':
-            newState = (0, None, None)
-            return [(newState, None, currentSum)]
+            newState = (currentSum, None, None)
+            return [(newState, 1, currentSum)]
         
         if action == 'Peek':
-            if not prevPeekVal == None: # Reject double peek
-                newState = []
-                return [(newState, None, remainingCards)]
+            if prevPeekVal is not None: # Reject double peek
+                return []
             for idx, _ in enumerate(remainingCards):
                 probability = remainingCards[idx] / numRemainingCards
-                succStateProbRewards.append(((currentSum, idx, remainingCards), probability, 0))
+                succStateProbRewards.append(((currentSum, idx, remainingCards), probability, -self.peekCost))
             return succStateProbRewards
 
         if action == 'Take':
@@ -97,8 +96,8 @@ class BlackjackMDP(util.MDP):
                 # Checks
                 if newSum > self.threshold: # Bust
                     succStateProbRewards.append(((newSum, None, None), probability, 0))
-                elif numRemainingCards == 0: # No cards left
-                    succStateProbRewards.append(((0, None, None), 0, newSum))
+                elif sum(newRemainingCards) == 0: # No cards left
+                    succStateProbRewards.append(((newSum, None, None), 1, newSum))
                 else:
                     succStateProbRewards.append(((newSum, None, newRemainingCards), probability, 0))
             return succStateProbRewards
