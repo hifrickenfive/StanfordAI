@@ -54,10 +54,7 @@ class BlackjackMDP(util.MDP):
         """Return (newState, probability, reward)"""
 
         # Initialise
-        newState = []
         succStateProbRewards = []
-
-        # Unpack state
         currentSum, prevPeekVal, remainingCards = state
 
         # Check remainingCards
@@ -66,6 +63,7 @@ class BlackjackMDP(util.MDP):
         else:
             numRemainingCards = sum(remainingCards)
 
+        # Perform actions
         if action == 'Quit':
             newState = (currentSum, None, None)
             return [(newState, 1, currentSum)]
@@ -74,14 +72,14 @@ class BlackjackMDP(util.MDP):
             if prevPeekVal is not None: # Reject double peek
                 return []
             for idx, cardCount in enumerate(remainingCards):
-                if cardCount > 0:
+                if cardCount > 0: # Essential!
                     probability = remainingCards[idx] / numRemainingCards
                     succStateProbRewards.append(((currentSum, idx, remainingCards), probability, -self.peekCost))
             return succStateProbRewards
 
         if action == 'Take':
             if prevPeekVal is not None:
-                # Update new sum , eval probability
+                # Update new sum, eval probability
                 newSum = currentSum + self.cardValues[prevPeekVal]
                 probability = 1
 
@@ -148,7 +146,11 @@ class QLearningAlgorithm(util.RLAlgorithm):
     # Return the Q function associated with the weights and features
     def getQ(self, state: Tuple, action: Any) -> float:
         score = 0
+        # print(f'state: {state}, action: {action}')
+        # print(f'features are: {self.featureExtractor(state, action)}')
         for f, v in self.featureExtractor(state, action):
+            # print(f'key is: {f}, value is: {v}')
+            # print(f'adding weights {self.weights[f]} to score: {score} \n')
             score += self.weights[f] * v
         return score
 
@@ -172,7 +174,18 @@ class QLearningAlgorithm(util.RLAlgorithm):
     # self.getQ() to compute the current estimate of the parameters.
     def incorporateFeedback(self, state: Tuple, action: Any, reward: int, newState: Tuple) -> None:
         # BEGIN_YOUR_CODE (our solution is 9 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        if newState is None:
+            VoptNextState = 0 # Because terminal state
+        else:
+            VoptNextState = max([self.getQ(newState, thisAction) for thisAction in self.actions(newState)])
+        
+        prediction = self.getQ(state, action)
+        target = reward + self.discount*VoptNextState
+        eta = self.getStepSize()
+
+        for item in self.featureExtractor(state,action):
+            key, featureValue = item
+            self.weights[key] = self.weights[key] - eta*(prediction - target)*featureValue
         # END_YOUR_CODE
 
 
@@ -239,10 +252,22 @@ def simulate_QL_over_MDP(mdp: BlackjackMDP, featureExtractor: Callable):
 #       The first feature will be ((0, 3, action), 1)
 #       Note: only add these features if the deck is not None.
 def blackjackFeatureExtractor(state: Tuple, action: str) -> List[tuple]:
-    total, nextCard, counts = state
-
     # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    result = []
+    total, nextCard, counts = state
+    result.append((('total', total, action), 1))
+
+    if counts is not None:
+        bitmaskValue = list(counts)
+        for idx, count in enumerate(counts):
+            if count > 0:
+                bitmaskValue[idx] = 1
+
+            result.append(((idx, counts[idx], action), 1))
+
+        result.append((('bitmask', tuple(bitmaskValue), action), 1))
+
+    return result
     # END_YOUR_CODE
 
 ############################################################

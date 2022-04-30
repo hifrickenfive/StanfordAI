@@ -9,48 +9,28 @@ import graderUtil
 grader = graderUtil.Grader()
 submission = grader.load('submission')
 
-cardValues = [1,2,3]
-multiplicity = 1
-threshold = 4
-peekCost = 10
-test = submission.BlackjackMDP(cardValues, multiplicity, threshold, peekCost)
 
+mdp = submission.BlackjackMDP(cardValues=[1, 5], multiplicity=2,
+                                threshold=10, peekCost=1)
+mdp.computeStates()
+rl = submission.QLearningAlgorithm(mdp.actions, mdp.discount(),
+                                    submission.blackjackFeatureExtractor,
+                                    0)
+# We call this here so that the stepSize will be 1
+rl.numIters = 1
 
-# Peek
-currentState = (0, None, (1,1,1))
-result = test.succAndProbReward(currentState, 'Peek')
-print(result)
+rl.incorporateFeedback((7, None, (0, 1)), 'Quit', 7, (7, None, None))
 
-# Peek
-currentState = (0, 1, (1,1,1))
-result = test.succAndProbReward(currentState, 'Peek')
-print(result)
+# incorporateFeedback(self, state: Tuple, action: Any, reward: int, newState: Tuple) -> None:
+# rl.incorporateFeedback((7, None, (0, 1)), 'Quit', 7, (7, None, None))
 
-# Quit
-currentState = (0, None, (1,1,1))
-result = test.succAndProbReward(currentState, 'Peek')
-print(result)
-
-# Take start
-currentState = (0, None, (1,1,1))
-result = test.succAndProbReward(currentState, 'Take')
-print(result)
-
-# Take ok
-currentState = (1, None, (1,1,1))
-result = test.succAndProbReward(currentState, 'Take')
-print(result)
-
-# Take bust
-currentState = (3, None, (1,1,1))
-result = test.succAndProbReward(currentState, 'Take')
-print(result)
-
-# Take last card
-currentState = (3, None, (1,0,0))
-result = test.succAndProbReward(currentState, 'Take')
-print(result)
-
-currentState = (3, None, (0,1,0))
-result = test.succAndProbReward(currentState, 'Take')
-print(result)
+# # Return the Q function associated with the weights and features
+# def getQ(self, state: Tuple, action: Any) -> float:
+#     score = 0
+#     for f, v in self.featureExtractor(state, action):
+#         score += self.weights[f] * v
+#     return score
+grader.require_is_equal(28, rl.getQ((7, None, (0, 1)), 'Quit'))
+# grader.require_is_equal(7, rl.getQ((7, None, (1, 0)), 'Quit'))
+# grader.require_is_equal(14, rl.getQ((2, None, (0, 2)), 'Quit'))
+# grader.require_is_equal(0, rl.getQ((2, None, (0, 2)), 'Take'))
