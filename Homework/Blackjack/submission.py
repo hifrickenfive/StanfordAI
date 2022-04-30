@@ -73,33 +73,53 @@ class BlackjackMDP(util.MDP):
         if action == 'Peek':
             if prevPeekVal is not None: # Reject double peek
                 return []
-            for idx, _ in enumerate(remainingCards):
-                probability = remainingCards[idx] / numRemainingCards
-                succStateProbRewards.append(((currentSum, idx, remainingCards), probability, -self.peekCost))
+            for idx, cardCount in enumerate(remainingCards):
+                if cardCount > 0:
+                    probability = remainingCards[idx] / numRemainingCards
+                    succStateProbRewards.append(((currentSum, idx, remainingCards), probability, -self.peekCost))
             return succStateProbRewards
 
         if action == 'Take':
-            for idx, cardCount in enumerate(remainingCards):
-                # No cards left for this face value
-                if not cardCount:
-                    continue
-
-                # Update currentSum, eval probability
-                newSum = currentSum + self.cardValues[idx]
-                probability = remainingCards[idx] / numRemainingCards
+            if prevPeekVal is not None:
+                # Update new sum , eval probability
+                newSum = currentSum + self.cardValues[prevPeekVal]
+                probability = 1
 
                 # Update remainingCards
                 _remainingCards = list(remainingCards)
-                _remainingCards[idx] = _remainingCards[idx] - 1
+                _remainingCards[prevPeekVal] = _remainingCards[prevPeekVal] - 1
                 newRemainingCards = tuple(_remainingCards)
 
                 # Checks
                 if newSum > self.threshold: # Bust
                     succStateProbRewards.append(((newSum, None, None), probability, 0))
                 elif sum(newRemainingCards) == 0: # No cards left
-                    succStateProbRewards.append(((newSum, None, None), 1, newSum))
+                    succStateProbRewards.append(((newSum, None, None), probability, newSum))
                 else:
                     succStateProbRewards.append(((newSum, None, newRemainingCards), probability, 0))
+
+            else:
+                for idx, cardCount in enumerate(remainingCards):
+                    # No cards left for this face value
+                    if cardCount == 0:
+                        continue
+
+                    # Update currentSum, eval probability
+                    newSum = currentSum + self.cardValues[idx]
+                    probability = remainingCards[idx] / numRemainingCards
+
+                    # Update remainingCards
+                    _remainingCards = list(remainingCards)
+                    _remainingCards[idx] = _remainingCards[idx] - 1
+                    newRemainingCards = tuple(_remainingCards)
+
+                    # Checks
+                    if newSum > self.threshold: # Bust
+                        succStateProbRewards.append(((newSum, None, None), probability, 0))
+                    elif sum(newRemainingCards) == 0: # No cards left
+                        succStateProbRewards.append(((newSum, None, None), 1, newSum))
+                    else:
+                        succStateProbRewards.append(((newSum, None, newRemainingCards), probability, 0))
             return succStateProbRewards
 
         # END_YOUR_CODE
