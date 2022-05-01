@@ -468,7 +468,7 @@ def sampleKRLTrajectories(mdp: SeaLevelRiseMDP, rl: QLearningAlgorithm):
     print(f"\nRL with MDP -> year:{mdp.startState()[0]}, budget:{mdp.startState() [1]}, infra:{mdp.startState()[2]}, sealevel:{mdp.startState()[3]} n_years:{mdp.n_years}, & discount:{mdp.discount()}")
     print(f"  *  total invest states: {invs} total wait states: {wats}")
     print(f"  *  ratio of invest to wait states: {invs/wats}\n")
-    
+     
 
 # This is a helper function for both 5b and 5d. This function runs 
 # ValueIteration, then simulates various trajectories through the MDP
