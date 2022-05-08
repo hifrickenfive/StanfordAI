@@ -364,6 +364,7 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
   # Initialise flags
   ghostScared = False
   ghostTooClose = False
+  numPillsEqualFood = False
 
   ################################# Evaluate raw inputs  ############################
   # Food distance
@@ -388,18 +389,16 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
       ghostTooClose = True
       
   # Capsule distance
-  # capsuleDistances = []
   capsuleScore = []
   for capsule in capsules:
     capsuleDistance = util.manhattanDistance(pacmanPosition, capsule)
     capsuleScore.append(1/capsuleDistance**2)
 
-
   ################################# Create Scores ############################
   ghostScore = 0
   for idx, ghostDistance in enumerate(sorted(ghostDistances)):
     # ghostScore += 1/(idx+1) * math.exp(ghostDistance-evadeThreshold) / (1 + math.exp(ghostDistance-evadeThreshold))
-    # ghostScore += (1/(idx+1))*(1/ghostDistance)
+    # ghostScore += (1/(idx+1))*(1/ghostDistance**2)
     ghostScore += (1/ghostDistance)
 
 
@@ -418,11 +417,11 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
 
   ################################# Evaluation Function ##########################
   if pacState == 'EVADE':
-    return currentGameState.getScore() - 100*ghostScore
+    return score - 160*ghostScore
   elif pacState == 'KILL':
-    return currentGameState.getScore() + 150*ghostScore
+    return score + 200*ghostScore
   elif pacState == 'EAT':
-    return currentGameState.getScore() + 8*sum(foodScore) - 10*ghostScore + 2*capsuleScore
+    return score + 10*sum(foodScore) - 12*ghostScore + 10*capsuleScore
 
   # END_YOUR_CODE
 
