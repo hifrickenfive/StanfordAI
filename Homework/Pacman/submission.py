@@ -362,17 +362,20 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
   # Food distance
   foodList = list(food)
   foodScore = []
+  foodDistances = []
   for i in range(food.width): # x axis
       for j in range(food.height): # y axis
           if foodList[i][j]:
               foodDistance = util.manhattanDistance(pacmanPosition,(i,j))
+              foodDistances.append(foodDistance)
               foodScore.append(1/foodDistance**2)
 
   # Ghost Distance
   ghostDistances = []
   for ghost in ghostStates:
     ghostDistance = util.manhattanDistance(pacmanPosition, ghost.getPosition())
-    ghostDistances.append(1/ghostDistance**2)
+    ghostDistances.append(ghostDistance)
+
 
   # Capsule distance
   # capsuleDistances = []
@@ -382,8 +385,11 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
     capsuleScore.append(1/capsuleDistance**2)
 
 
-  ################################# Create Flags ############################
-  evadeDistance = 3
+  ################################# Create Metrics ############################
+  evadeDistance = 6
+  for ghostDistance in ghostDistances:
+    ghostScore = math.exp(ghostDistance-evadeDistance) / (1 + math.exp(ghostDistance-evadeDistance))
+
   if evadeDistance in ghostDistances:
     ghostTooClose = True
   else:
@@ -404,14 +410,16 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
     pacState = 'EAT'
 
   ################################# Evaluation Function ##########################
-  if pacState == 'EAT':
-    return 100*sum(foodScore) + 10*sum(capsuleScore)
-  elif pacState == 'EVADE':
-    return 10000 * min(ghostDistances)
-  elif pacState == 'KILL':
-    return 1000 * sum(ghostDistances)
-  else:
-    return 5 
+  # if pacState == 'EAT':
+  #   return 100*sum(foodScore) + 10*sum(capsuleScore)
+  # elif pacState == 'EVADE':
+  #   return 10000 * min(ghostDistances)
+  # elif pacState == 'KILL':
+  #   return 1000 * sum(ghostDistances)
+  # else:
+  #   return 5 
+
+  return currentGameState.getScore() + 5*sum(foodScore) + 10*ghostScore
 
   # END_YOUR_CODE
 
