@@ -416,7 +416,7 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
 
   ################################# Evaluation Function ##########################
   if pacState == 'EVADE':
-    return currentGameState.getScore() - 10*ghostScore
+    return currentGameState.getScore() - 100*ghostScore
   elif pacState == 'KILL':
     return currentGameState.getScore() + 150*ghostScore
   elif pacState == 'EAT':
