@@ -398,8 +398,8 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
   ################################# Create Scores ############################
   ghostScore = 0
   for idx, ghostDistance in enumerate(sorted(ghostDistances)):
-    ghostScore += 1/(idx+1) * math.exp(ghostDistance-evadeThreshold) / (1 + math.exp(ghostDistance-evadeThreshold))
-    # ghostScore += (1/(idx+1))*(1/ghostDistance)
+    # ghostScore += 1/(idx+1) * math.exp(ghostDistance-evadeThreshold) / (1 + math.exp(ghostDistance-evadeThreshold))
+    ghostScore += (1/(idx+1))*(1/ghostDistance)
 
   capsuleScore = 0
   for capsule in capsules:
@@ -418,7 +418,7 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
   if pacState == 'EVADE':
     return currentGameState.getScore() - 10*ghostScore
   elif pacState == 'KILL':
-    return currentGameState.getScore() + 10*ghostScore
+    return currentGameState.getScore() + 100*ghostScore
   elif pacState == 'EAT':
     return currentGameState.getScore() + 5*sum(foodScore) - 10*ghostScore + 2*capsuleScore
 
