@@ -359,7 +359,7 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
   capsules = currentGameState.getCapsules() # list of tuples (x, y) positions
 
   # Set params
-  evadeThreshold = 2
+  evadeThreshold = 3
 
   # Initialise flags
   ghostScared = False
@@ -392,7 +392,7 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
   capsuleScore = []
   for capsule in capsules:
     capsuleDistance = util.manhattanDistance(pacmanPosition, capsule)
-    capsuleScore.append(1/capsuleDistance**2)
+    # capsuleScore.append(1/capsuleDistance**2)
 
   ################################# Create Scores ############################
   ghostScore = 0
@@ -417,9 +417,9 @@ def betterEvaluationFunction(currentGameState: GameState) -> float:
 
   ################################# Evaluation Function ##########################
   if pacState == 'EVADE':
-    return score - 160*ghostScore
+    return score - 180*ghostScore
   elif pacState == 'KILL':
-    return score + 200*ghostScore
+    return score + 210*ghostScore
   elif pacState == 'EAT':
     return score + 10*sum(foodScore) - 12*ghostScore + 10*capsuleScore
 
