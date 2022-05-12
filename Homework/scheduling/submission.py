@@ -79,8 +79,8 @@ def create_nqueens_csp(n: int = 8) -> CSP:
     # THE SECRET: model queens, where X_1 is in column 1, X_2 in column 2 etc, thanks Weston
     variables = [f'x{i}' for i in range(1, n+1)]
 
-    # Define the domain: the row position of a queen in its respective column
-    domain = range(n) # TRICK: reduce from 2D to 1D problem. OMG wow.
+    # Define the domain: the row position of a queen in its respective column. So clever.
+    domain = [i for i in range(n)] 
 
     for variable in variables:
         csp.add_variable(variable, domain)
