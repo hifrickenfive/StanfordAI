@@ -37,14 +37,12 @@ def create_chain_csp(n: int) -> CSP:
     csp = CSP()
     # Problem 0c
     # BEGIN_YOUR_CODE (our solution is 4 lines of code, but don't worry if you deviate from this)
-    def factor_XOR(x, y):
-        return x == y
     domain = [0,1]
     for variable in variables:
         csp.add_variable(variable, domain)
     
     for i in range(0, len(variables)-1):
-        csp.add_binary_factor(variables[i], variables[i+1], factor_XOR)
+        csp.add_binary_factor(variables[i], variables[i+1], lambda x, y: x != y)
     # END_YOUR_CODE
     return csp
 
