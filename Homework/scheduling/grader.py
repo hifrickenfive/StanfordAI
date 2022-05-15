@@ -222,7 +222,6 @@ grader.add_hidden_part('2a-3-hidden', test2a_3, 2, max_seconds=3,
 ############################################################
 # Problem 2b: Unit load
 
-
 def test2b_1():
     profile = util.Profile(bulletin, 'profile2b.txt')
     cspConstructor = submission.SchedulingCSPConstructor(bulletin, copy.deepcopy(profile))
