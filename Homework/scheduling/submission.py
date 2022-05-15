@@ -3,6 +3,8 @@ import copy
 from util import CSP, get_or_variable, CourseBulletin, Profile
 from typing import Dict, List
 
+import math
+
 ############################################################
 # Problem 0
 
@@ -86,8 +88,8 @@ def create_nqueens_csp(n: int = 8) -> CSP:
     for i in range(0, n):
         for j in range(i+1, n):
             csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y) # can't be same row
-            csp.add_binary_factor(variables[i], variables[j], lambda x, y: x!=y-(j-i)) # upper diag wrt x
-            csp.add_binary_factor(variables[i], variables[j], lambda x, y: x!=y+(j-i)) # low diag wrt x
+            csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y - (j-i)) # upper diag wrt x
+            csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y + (j-i)) # low diag wrt x
 
     # END_YOUR_CODE
     return csp
@@ -318,7 +320,32 @@ class BacktrackingSearch:
             #       to satisfy all constraints.
             # Hint: for ties, choose the variable with lowest index in self.csp.variables
             # BEGIN_YOUR_CODE (our solution is 13 lines of code, but don't worry if you deviate from this)
-            raise Exception("Not implemented yet")
+
+            if not assignment: # If no assignments, assign first variable
+                return self.csp.variables[0]
+            else:
+                fewest_num_values = math.inf
+                for variable in self.csp.variables - assignment.keys(): # Get list of variables that are not in assignment
+                    # Get current variable's domain
+                    remaining_values_in_domain = self.domains[variable] # Domain list. Mutates because it can shrink.
+
+                    # Do look ahead prune on neighbours domains if factor=1
+                    neighbours = self.csp.get_neighbor_vars(variable)
+                    for neighbour in neighbours:
+                        constraints = self.csp.binaryFactors[variable][neighbour] # dict of dict. {var's domain value:{neighbour's values: factor weight}}
+                        new_neighbour_values = []
+                        for var_value in remaining_values_in_domain:
+                            for neighbour_domain_value, factor_weight in constraints[var_value].items():
+                                if factor_weight == 0.0:
+                                    new_neighbour_values.append(neighbour_domain_value)
+                        self.domains[neighbour] = list(set(new_neighbour_values))
+
+                    # Check current variable
+                    num_values = len(remaining_values_in_domain)
+                    if num_values < fewest_num_values: # Tie breaker: choose variable with lowest idx in self.csp.variables
+                        most_constrained_variable = variable
+                        fewest_num_values = num_values
+            return most_constrained_variable
             # END_YOUR_CODE
 
     def apply_arc_consistency(self, var) -> None:
