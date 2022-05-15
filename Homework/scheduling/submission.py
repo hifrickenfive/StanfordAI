@@ -3,6 +3,8 @@ import copy
 from util import CSP, get_or_variable, CourseBulletin, Profile
 from typing import Dict, List
 
+import math
+
 ############################################################
 # Problem 0
 
@@ -37,7 +39,12 @@ def create_chain_csp(n: int) -> CSP:
     csp = CSP()
     # Problem 0c
     # BEGIN_YOUR_CODE (our solution is 4 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    domain = [0,1]
+    for variable in variables:
+        csp.add_variable(variable, domain)
+    
+    for i in range(0, len(variables)-1):
+        csp.add_binary_factor(variables[i], variables[i+1], lambda x, y: x != y)
     # END_YOUR_CODE
     return csp
 
@@ -67,7 +74,20 @@ def create_nqueens_csp(n: int = 8) -> CSP:
     csp = CSP()
     # Problem 1a
     # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+
+    # THE CLEVER MODELLING TECHNIQUE: define X_1 ascolumn 1, X_2 as column 2 etc, thanks Weston!!
+    variables = [f'x{i}' for i in range(1, n+1)]  # Define variables
+    domain = [i for i in range(n)] # Define the domain: the row position of a queen in its respective column. So clever.
+
+    for variable in variables:
+        csp.add_variable(variable, domain)
+
+    for i in range(0, n):
+        for j in range(i+1, n):
+            csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y) # can't be same row
+            csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y - (j-i)) # upper diag wrt x
+            csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y + (j-i)) # low diag wrt x
+
     # END_YOUR_CODE
     return csp
 
@@ -75,8 +95,6 @@ def create_nqueens_csp(n: int = 8) -> CSP:
 # Usage:
 #   search = BacktrackingSearch()
 #   search.solve(csp)
-
-
 class BacktrackingSearch:
     def reset_results(self) -> None:
         """
@@ -240,7 +258,7 @@ class BacktrackingSearch:
         # Get an ordering of the values.
         ordered_values = self.domains[var]
 
-        # Continue the backtracking recursion using |var| and |ordered_values|.
+        # Continue the backtrcking recursion using |var| and |ordered_values|.
         if not self.ac3:
             # When arc consistency check is not enabled.
             for val in ordered_values:
@@ -299,7 +317,29 @@ class BacktrackingSearch:
             #       to satisfy all constraints.
             # Hint: for ties, choose the variable with lowest index in self.csp.variables
             # BEGIN_YOUR_CODE (our solution is 13 lines of code, but don't worry if you deviate from this)
-            raise Exception("Not implemented yet")
+
+            if not assignment: # If no assignments, assign first variable
+                return self.csp.variables[0]
+            else:
+                fewest_num_values = math.inf
+                for variable in self.csp.variables:
+                    if variable not in assignment:
+                        # Get current variable's domain
+                        remaining_values_in_domain = self.domains[variable]
+
+                        # Check constraint satisfaction
+                        valid_values_count = 0
+                        for value in remaining_values_in_domain:
+                            is_valid_value = self.satisfies_constraints(assignment, variable, value)
+                            if is_valid_value:
+                                valid_values_count += 1
+
+                        # Check current variable
+                        if valid_values_count < fewest_num_values: # Tie breaker: choose variable with lowest idx in self.csp.variables
+                            most_constrained_variable = variable
+                            fewest_num_values = valid_values_count
+
+                return most_constrained_variable
             # END_YOUR_CODE
 
     def apply_arc_consistency(self, var) -> None:
@@ -479,7 +519,27 @@ class SchedulingCSPConstructor:
         # Hint: To check which quarters are specified by a request variable
         #       named `request`, use request.quarters (NOT self.profile.quarters).
         # BEGIN_YOUR_CODE (our solution is 5 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+
+        # VARAIBLES = (request object, quarter), ...
+        #  each request object has...
+        #   request.cids
+        #   request.quarters
+        #   request.prereqs
+        #   request.weight
+        # Variable = the school quarter I need to enrol in
+
+        def is_quarter_constrained(cid):
+            # cid can be none because we can reject the entire request
+            if cid == None or (quarter in request.quarters):
+                return True
+            else:
+                return False
+
+        for request in self.profile.requests: 
+            if request.quarters: # do my courses have availability constraints? If so, add constraint.
+                for quarter in self.profile.quarters: # the quarters I need to fill up
+                    csp.add_unary_factor((request, quarter), is_quarter_constrained)
+
         # END_YOUR_CODE
 
     def add_request_weights(self, csp: CSP) -> None:
@@ -584,7 +644,41 @@ class SchedulingCSPConstructor:
         #                       ...
         #               ...
         # BEGIN_YOUR_CODE (our solution is 20 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        
+        # Add variable (courseID, quarter) to CSP
+        # Add binary factor between (request, quarter) and (courseId, quarter)
+        # Add unary factor on each quarter: sum of units per quarter within min and max inclusive.
+
+        def made_or_decision(request_cid, course_unit):
+            if request_cid == cid:
+                return course_unit > 0 
+            else:
+                return course_unit == 0
+
+        def quarter_units_in_range(quarter_sum):
+            if quarter_sum >= self.profile.minUnits and quarter_sum <=self.profile.maxUnits:
+                return True
+            else:
+                return False
+        
+        for quarter in self.profile.quarters:
+            new_variables_per_quarter =[]
+            for request in self.profile.requests:
+                for cid in request.cids: 
+                    # To handle multiple courses per request
+                    course_variable = (cid, quarter) 
+                    course_domain = [self.bulletin.courses[cid].minUnits, self.bulletin.courses[cid].maxUnits + 1, 0]
+
+                    # Add new variable (cid, quarter) to CSP
+                    csp.add_variable(course_variable, course_domain) # Zero represents course not taken Hint 2.
+                    new_variables_per_quarter.append(course_variable)
+
+                    # Add binary factor to handle the OR decision
+                    csp.add_binary_factor((request, quarter), course_variable, made_or_decision)
+            
+            # Add unary factor to handle the quarter's min/max unit constraint
+            quarter_sum = create_sum_variable(csp, str(quarter) + '\'s total units', new_variables_per_quarter, self.profile.maxUnits)
+            csp.add_unary_factor(quarter_sum, quarter_units_in_range)
         # END_YOUR_CODE
 
     def add_all_additional_constraints(self, csp: CSP) -> None:
