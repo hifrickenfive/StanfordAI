@@ -75,12 +75,9 @@ def create_nqueens_csp(n: int = 8) -> CSP:
     # Problem 1a
     # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
 
-    # Define variables: 
-    # THE SECRET: model queens, where X_1 is in column 1, X_2 in column 2 etc, thanks Weston
-    variables = [f'x{i}' for i in range(1, n+1)]
-
-    # Define the domain: the row position of a queen in its respective column. So clever.
-    domain = [i for i in range(n)] 
+    # THE CLEVER MODELLING TECHNIQUE: define X_1 ascolumn 1, X_2 as column 2 etc, thanks Weston!!
+    variables = [f'x{i}' for i in range(1, n+1)]  # Define variables
+    domain = [i for i in range(n)] # Define the domain: the row position of a queen in its respective column. So clever.
 
     for variable in variables:
         csp.add_variable(variable, domain)
@@ -90,16 +87,6 @@ def create_nqueens_csp(n: int = 8) -> CSP:
             csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y) # can't be same row
             csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y - (j-i)) # upper diag wrt x
             csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y + (j-i)) # low diag wrt x
-
-    # variables=['x%d' % i for i in range(1,n+1)]
-    # for index,variable in enumerate(variables):
-    #     csp.add_variable(variable,[(index,i) for i in range(0,n)])
-    # for index,variable in enumerate(variables):
-    #     for index2,variable2 in enumerate(variables):
-    #         if index!=index2:
-    #             csp.add_binary_factor(variable,variable2,lambda x,y:x[1]!=y[1])
-    #             csp.add_binary_factor(variable,variable2,lambda x,y:(x[0]-x[1])!=(y[0]-y[1]))
-    #             csp.add_binary_factor(variable,variable2,lambda x,y:(x[0]+x[1])!=(y[0]+y[1]))
 
     # END_YOUR_CODE
     return csp
@@ -541,10 +528,17 @@ class SchedulingCSPConstructor:
         #   request.weight
         # Variable = the school quarter I need to enrol in
 
+        def is_quarter_constrained(cid):
+            # cid can be none because we can reject the entire request
+            if cid == None or (quarter in request.quarters):
+                return True
+            else:
+                return False
+
         for request in self.profile.requests: 
             if request.quarters: # do my courses have availability constraints? If so, add constraint.
-                for quarter in self.profile.quarters: 
-                    csp.add_unary_factor((request, quarter), lambda cid: True if ((cid == None) or (quarter in request.quarters)) else False)
+                for quarter in self.profile.quarters: # the quarters I need to fill up
+                    csp.add_unary_factor((request, quarter), is_quarter_constrained)
 
         # END_YOUR_CODE
 
@@ -650,7 +644,41 @@ class SchedulingCSPConstructor:
         #                       ...
         #               ...
         # BEGIN_YOUR_CODE (our solution is 20 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        
+        # Add variable (courseID, quarter) to CSP
+        # Add binary factor between (request, quarter) and (courseId, quarter)
+        # Add unary factor on each quarter: sum of units per quarter within min and max inclusive.
+
+        def made_or_decision(request_cid, course_unit):
+            if request_cid == cid:
+                return course_unit > 0 
+            else:
+                return course_unit == 0
+
+        def quarter_units_in_range(quarter_sum):
+            if quarter_sum >= self.profile.minUnits and quarter_sum <=self.profile.maxUnits:
+                return True
+            else:
+                return False
+        
+        for quarter in self.profile.quarters:
+            new_variables_per_quarter =[]
+            for request in self.profile.requests:
+                for cid in request.cids: 
+                    # To handle multiple courses per request
+                    course_variable = (cid, quarter) 
+                    course_domain = [self.bulletin.courses[cid].minUnits, self.bulletin.courses[cid].maxUnits + 1, 0]
+
+                    # Add new variable (cid, quarter) to CSP
+                    csp.add_variable(course_variable, course_domain) # Zero represents course not taken Hint 2.
+                    new_variables_per_quarter.append(course_variable)
+
+                    # Add binary factor to handle the OR decision
+                    csp.add_binary_factor((request, quarter), course_variable, made_or_decision)
+            
+            # Add unary factor to handle the quarter's min/max unit constraint
+            quarter_sum = create_sum_variable(csp, str(quarter) + '\'s total units', new_variables_per_quarter, self.profile.maxUnits)
+            csp.add_unary_factor(quarter_sum, quarter_units_in_range)
         # END_YOUR_CODE
 
     def add_all_additional_constraints(self, csp: CSP) -> None:
