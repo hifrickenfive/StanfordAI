@@ -261,7 +261,7 @@ class BacktrackingSearch:
         # Get an ordering of the values.
         ordered_values = self.domains[var]
 
-        # Continue the backtracking recursion using |var| and |ordered_values|.
+        # Continue the backtrcking recursion using |var| and |ordered_values|.
         if not self.ac3:
             # When arc consistency check is not enabled.
             for val in ordered_values:
@@ -325,27 +325,24 @@ class BacktrackingSearch:
                 return self.csp.variables[0]
             else:
                 fewest_num_values = math.inf
-                for variable in self.csp.variables - assignment.keys(): # Get list of variables that are not in assignment
-                    # Get current variable's domain
-                    remaining_values_in_domain = self.domains[variable] # Domain list. Mutates because it can shrink.
+                for variable in self.csp.variables:
+                    if variable not in assignment:
+                        # Get current variable's domain
+                        remaining_values_in_domain = self.domains[variable]
 
-                    # Do look ahead prune on neighbours domains if factor=1
-                    neighbours = self.csp.get_neighbor_vars(variable)
-                    for neighbour in neighbours:
-                        constraints = self.csp.binaryFactors[variable][neighbour] # dict of dict. {var's domain value:{neighbour's values: factor weight}}
-                        new_neighbour_values = []
-                        for var_value in remaining_values_in_domain:
-                            for neighbour_domain_value, factor_weight in constraints[var_value].items():
-                                if factor_weight == 0.0:
-                                    new_neighbour_values.append(neighbour_domain_value)
-                        self.domains[neighbour] = list(set(new_neighbour_values))
+                        # Check constraint satisfaction
+                        valid_values_count = 0
+                        for value in remaining_values_in_domain:
+                            is_valid_value = self.satisfies_constraints(assignment, variable, value)
+                            if is_valid_value:
+                                valid_values_count += 1
 
-                    # Check current variable
-                    num_values = len(remaining_values_in_domain)
-                    if num_values < fewest_num_values: # Tie breaker: choose variable with lowest idx in self.csp.variables
-                        most_constrained_variable = variable
-                        fewest_num_values = num_values
-            return most_constrained_variable
+                        # Check current variable
+                        if valid_values_count < fewest_num_values: # Tie breaker: choose variable with lowest idx in self.csp.variables
+                            most_constrained_variable = variable
+                            fewest_num_values = valid_values_count
+
+                return most_constrained_variable
             # END_YOUR_CODE
 
     def apply_arc_consistency(self, var) -> None:
