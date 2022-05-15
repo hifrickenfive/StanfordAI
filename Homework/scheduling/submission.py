@@ -91,6 +91,16 @@ def create_nqueens_csp(n: int = 8) -> CSP:
             csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y - (j-i)) # upper diag wrt x
             csp.add_binary_factor(variables[i], variables[j], lambda x, y: x != y + (j-i)) # low diag wrt x
 
+    # variables=['x%d' % i for i in range(1,n+1)]
+    # for index,variable in enumerate(variables):
+    #     csp.add_variable(variable,[(index,i) for i in range(0,n)])
+    # for index,variable in enumerate(variables):
+    #     for index2,variable2 in enumerate(variables):
+    #         if index!=index2:
+    #             csp.add_binary_factor(variable,variable2,lambda x,y:x[1]!=y[1])
+    #             csp.add_binary_factor(variable,variable2,lambda x,y:(x[0]-x[1])!=(y[0]-y[1]))
+    #             csp.add_binary_factor(variable,variable2,lambda x,y:(x[0]+x[1])!=(y[0]+y[1]))
+
     # END_YOUR_CODE
     return csp
 
@@ -523,41 +533,19 @@ class SchedulingCSPConstructor:
         #       named `request`, use request.quarters (NOT self.profile.quarters).
         # BEGIN_YOUR_CODE (our solution is 5 lines of code, but don't worry if you deviate from this)
 
-        # Variables = (request, quarter), ...
+        # VARAIBLES = (request object, quarter), ...
         #  each request object has...
-        #    cid (that you're choosing one of), quarter that you're allowed to take the courses, prereq ids, factor
-        #    important to note that request doesn't have to be fulfilled but if it is, the constraints specified by the 
-        #        various operators after, in must also be satisfied. 
-        # Domain = quarters offered
-        # Constraints = quarter offered, prereqs done?
-        # Factors = request weight
+        #   request.cids
+        #   request.quarters
+        #   request.prereqs
+        #   request.weight
+        # Variable = the school quarter I need to enrol in
 
-        # Get profile info
-        self.profile.print_info()
-        for request in self.profile.requests:
-            print(request.cids, request.quarters, request.prereqs, request.weight)
+        for request in self.profile.requests: 
+            if request.quarters: # do my courses have availability constraints? If so, add constraint.
+                for quarter in self.profile.quarters: 
+                    csp.add_unary_factor((request, quarter), lambda cid: True if ((cid == None) or (quarter in request.quarters)) else False)
 
-            for cid in request.cids:
-                print(f'Request CID: {cid}')
-                prereqs = self.bulletin.courses[cid].prereqs
-                taken = self.profile.taken
-                print(f'Taken: {taken} vs. {prereqs}')
-                if prereqs:
-                    set1 = set(prereqs)
-                    set2 = set(taken)
-                    if set1.intersection(set2):
-                        met_prereqs = True
-                    else:
-                        met_prereqs = False
-                else:
-                    met_prereqs = True # because no prereqs    
-                    print(f'Met prereq:{met_prereqs}')
-
-        # Check bulletin
-        # self.bulletin.courses[cid].prereqs # list
-        # self.bulletin.courses[cid].is_offered_in('Aut2018') # boolean
-
-        a =1
         # END_YOUR_CODE
 
     def add_request_weights(self, csp: CSP) -> None:

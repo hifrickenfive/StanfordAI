@@ -3,14 +3,14 @@ import util
 bulletin = util.CourseBulletin('courses.json')
 # retrieve information of CS221
 cs221 = bulletin.courses['CS221']
-print(cs221)
-# look at various properties of the course
-print(cs221.cid)
-print(cs221.minUnits)
-print(cs221.maxUnits)
-print(cs221.prereqs)  # the prerequisites
-print(cs221.is_offered_in('Aut2018'))
-print(cs221.is_offered_in('Win2019'))
+# print(cs221)
+# # look at various properties of the course
+# print(cs221.cid)
+# print(cs221.minUnits)
+# print(cs221.maxUnits)
+# print(cs221.prereqs)  # the prerequisites
+# print(cs221.is_offered_in('Aut2018'))
+# print(cs221.is_offered_in('Win2019'))
 
 # load profile from profile_example.txt
 profile = util.Profile(bulletin, 'profile_example.txt')
