@@ -237,8 +237,10 @@ class ParticleFilter(object):
         # 3. Resample particles: Normalize weights and draw K samples to redistribute particles to more promising areas.
         newParticles = collections.defaultdict(int)
         for i in range(self.NUM_PARTICLES):
-            selectedGridLocation = util.weightedRandomChoice(extendedParticles) # randomly select particle grid location based on distribution proportional to its weights
-            newParticles[selectedGridLocation] += 1 # Increment num particles @ this particular grid location. Again, also un-normalized
+            # randomly select particle grid location based on distribution proportional to its weights
+            selectedGridLocation = util.weightedRandomChoice(extendedParticles)
+            # Increment num particles @ this particular grid location. Again, also un-normalized
+            newParticles[selectedGridLocation] += 1 
         self.particles = newParticles
         # END_YOUR_CODE
 
@@ -252,7 +254,7 @@ class ParticleFilter(object):
     # writes an updated |self.particles| with particle locations at time $t+1$.
     #
     # This algorithm takes one step:
-    # 1. Proposal based on the particle distribution at current time $t$.
+    # 1. Proposal based on the particle distribution at current ffffffffffffffffffffffffffffffffffffffffftime $t$.
     #    Concept: We have a particle distribution at current time $t$, and we want
     #             to propose the particle distribution at time $t+1$. We would like
     #             to sample again to see where each particle would end up using
@@ -269,17 +271,16 @@ class ParticleFilter(object):
     ##################################################################################
     def elapseTime(self) -> None:
         # BEGIN_YOUR_CODE (our solution is 6 lines of code, but don't worry if you deviate from this)
-        particles = collections.Counter()
-        
-        # sample again to see where each particle would end up using the transition model.
+        newParticles = collections.defaultdict(int)
         for (particleRow, particleCol), numParticles in self.particles.items():
-            for p in range(numParticles):
-                newParticle = util.weightedRandomChoice(self.transProbDict[(particleRow, particleCol)])
-                if newParticle in particles:
-                    particles[newParticle] += 1
-                else: 
-                    particles[newParticle] = 1
-        self.particles = particles
+            for _ in range(numParticles):
+                # Get transition weights
+                transitionWeights = self.transProbDict[(particleRow, particleCol)]
+
+                # Get grid location
+                selectedGridLocation = util.weightedRandomChoice(transitionWeights)
+                newParticles[selectedGridLocation] += 1
+        self.particles = newParticles
         # END_YOUR_CODE
 
     # Function: Get Belief
