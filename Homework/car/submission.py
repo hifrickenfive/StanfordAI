@@ -97,7 +97,25 @@ class ExactInference(object):
         if self.skipElapse: ### ONLY FOR THE GRADER TO USE IN Problem 1
             return
         # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+
+        # Reset all beliefs to zero. Flush old beliefs down the drain!
+        newBelief = util.Belief(self.belief.numRows, self.belief.numCols, value = 0.0)
+
+        # Loop through each 'valid' transitions
+        for (currentTile, nextTile), transProb in self.transProb.items():
+            if transProb > 0:
+                # Get probability of current tile. Assumes already updated for latest emission (i.e current posterior probability)
+                current_posterior_prob = self.belief.getProb(currentTile[0], currentTile[1]) 
+
+                # Update current posterior probability with transition probability
+                updated_probability = current_posterior_prob*transProb
+
+                # Set new probability @ next tile location
+                newBelief.addProb(nextTile[0], nextTile[1], updated_probability) 
+                
+        newBelief.normalize()
+        self.belief = newBelief
+
         # END_YOUR_CODE
 
     # Function: Get Belief
