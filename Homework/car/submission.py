@@ -237,9 +237,10 @@ class ParticleFilter(object):
         # 3. Resample particles: Normalize weights and draw K samples to redistribute particles to more promising areas.
         newParticles = collections.defaultdict(int)
         for i in range(self.NUM_PARTICLES):
-            # randomly select particle grid location based on distribution proportional to its weights
+            # Randomly select particle grid location based on distribution proportional to its weights
             selectedGridLocation = util.weightedRandomChoice(extendedParticles)
-            # Increment num particles @ this particular grid location. Again, also un-normalized
+
+            # Increment newParticles count iff selectedGridLocation is already in newParticles
             newParticles[selectedGridLocation] += 1 
         self.particles = newParticles
         # END_YOUR_CODE
@@ -279,6 +280,8 @@ class ParticleFilter(object):
 
                 # Get grid location
                 selectedGridLocation = util.weightedRandomChoice(transitionWeights)
+
+                # Increment newParticles count iff selectedGridLocation is already in newParticles
                 newParticles[selectedGridLocation] += 1
         self.particles = newParticles
         # END_YOUR_CODE
