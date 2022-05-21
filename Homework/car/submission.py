@@ -101,17 +101,17 @@ class ExactInference(object):
         # Reset all beliefs to zero. Flush old beliefs down the drain!
         newBelief = util.Belief(self.belief.numRows, self.belief.numCols, value = 0.0)
 
-        # Loop through each 'valid' transitions
+        # Loop through each 'valid' transition
         for (currentTile, nextTile), transProb in self.transProb.items():
             if transProb > 0:
                 # Get probability of current tile. Assumes already updated for latest emission (i.e current posterior probability)
-                current_posterior_prob = self.belief.getProb(currentTile[0], currentTile[1]) 
+                currentPosteriorProb = self.belief.getProb(currentTile[0], currentTile[1]) 
 
                 # Update current posterior probability with transition probability
-                updated_probability = current_posterior_prob*transProb
+                updatedProbability = currentPosteriorProb*transProb
 
                 # Set new probability @ next tile location
-                newBelief.addProb(nextTile[0], nextTile[1], updated_probability) 
+                newBelief.addProb(nextTile[0], nextTile[1], updatedProbability) 
                 
         newBelief.normalize()
         self.belief = newBelief
@@ -217,7 +217,29 @@ class ParticleFilter(object):
     ##################################################################################
     def observe(self, agentX: int, agentY: int, observedDist: float) -> None:
         # BEGIN_YOUR_CODE (our solution is 14 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+
+        # self.particles.items() is the 'unnormalized posterior probability'
+        #    is the count of the NUMBER of particles in that grid location
+
+        # 1. Propose: Extend the current partial assignment 
+        extendedParticles = collections.defaultdict(float)
+        for (particleRow, particleCol), numParticles in self.particles.items():
+            # Eval true distance between car to tile using real coordiate units
+            tileY= util.rowToY(particleRow)
+            tileX = util.colToX(particleCol)
+            trueDist = math.sqrt((tileX - agentX)**2 + (tileY - agentY)**2)
+        
+            # 2. Re-Weight particle based on new emission evididence
+            probOfEmission = util.pdf(trueDist, Const.SONAR_STD, observedDist)
+            posteriorProb = numParticles * probOfEmission
+            extendedParticles[(particleRow, particleCol)] = posteriorProb
+
+        # 3. Resample particles: Normalize weights and draw K samples to redistribute particles to more promising areas.
+        newParticles = collections.defaultdict(int)
+        for i in range(self.NUM_PARTICLES):
+            selectedGridLocation = util.weightedRandomChoice(extendedParticles) # randomly select particle grid location based on distribution proportional to its weights
+            newParticles[selectedGridLocation] += 1 # Increment num particles @ this particular grid location. Again, also un-normalized
+        self.particles = newParticles
         # END_YOUR_CODE
 
         self.updateBelief()
@@ -247,7 +269,17 @@ class ParticleFilter(object):
     ##################################################################################
     def elapseTime(self) -> None:
         # BEGIN_YOUR_CODE (our solution is 6 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        particles = collections.Counter()
+        
+        # sample again to see where each particle would end up using the transition model.
+        for (particleRow, particleCol), numParticles in self.particles.items():
+            for p in range(numParticles):
+                newParticle = util.weightedRandomChoice(self.transProbDict[(particleRow, particleCol)])
+                if newParticle in particles:
+                    particles[newParticle] += 1
+                else: 
+                    particles[newParticle] = 1
+        self.particles = particles
         # END_YOUR_CODE
 
     # Function: Get Belief
