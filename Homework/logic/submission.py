@@ -3,7 +3,7 @@ import os
 import sys
 from typing import List, Tuple
 
-from sympy import Equivalent
+# from sympy import Equivalent # This breaks the autograder.
 
 from logic import *
 
@@ -74,6 +74,18 @@ def formula2c() -> Formula:
     def Parent(x, y): return Atom('Parent', x, y)        # whether x has a parent y
     def Father(x, y): return Atom('Father', x, y)        # whether x has a father y
     # BEGIN_YOUR_CODE (our solution is 4 lines of code, but don't worry if you deviate from this)
+  
+    return Forall('$x', 
+        Forall('$y',
+            Equiv(
+                And(
+                    Male('$x'), 
+                    Parent('$y', '$x')), 
+                Father('$y', '$x')
+            )
+        )
+    )
+
     raise Exception("Not implemented yet")
     # END_YOUR_CODE
 
@@ -85,6 +97,23 @@ def formula2d() -> Formula:
     def Child(x, y): return Atom('Child', x, y)                  # whether x has a child y
     def Granddaughter(x, y): return Atom('Granddaughter', x, y)  # whether x has a graddaughter y
     # BEGIN_YOUR_CODE (our solution is 5 lines of code, but don't worry if you deviate from this)
+    
+    return Forall('$x',
+        Forall('$y',
+            Equiv(
+                And(Female('$x'), 
+                    Exists('$z', 
+                        And(
+                            Child('$z', '$x'), 
+                            Child('$y', '$z')
+                        )
+                    )
+                ), 
+                Granddaughter('$y', '$x')
+             )
+        )
+    )
+
     raise Exception("Not implemented yet")
     # END_YOUR_CODE
 
@@ -116,7 +145,23 @@ def liar() -> Tuple[List[Formula], Formula]:
     formulas.append(Equiv(TellTruth(mark), Not(CrashedServer(mark))))
     # You should add 5 formulas, one for each of facts 1-5.
     # BEGIN_YOUR_CODE (our solution is 11 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    formulas.append(Equiv(TellTruth(john), CrashedServer(nicole)))
+    formulas.append(Equiv(TellTruth(nicole), CrashedServer(susan)))
+    formulas.append(Equiv(TellTruth(susan), Not(TellTruth(nicole))))
+    formulas.append(
+        Exists('$y', # Person who speak the true true
+            Forall('$x', # All suspects
+                Equiv(TellTruth('$x'), Equals('$x', '$y'))
+            )
+        )
+    )
+    formulas.append(
+        Exists('$y', # Person who took down the server
+            Forall('$x', # All suspects
+                Equiv(CrashedServer('$x'), Equals('$x', '$y'))
+            )
+        )
+    )
     # END_YOUR_CODE
     query = CrashedServer('$x')
     return (formulas, query)
@@ -148,7 +193,88 @@ def ints() -> Tuple[List[Formula], Formula]:
     formulas = []
     query = None
     # BEGIN_YOUR_CODE (our solution is 23 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    
+    # Rule 0
+    formulas.append(
+        Forall('$x',
+            Exists('$y',
+                And(
+                    Forall('$z',
+                        Equiv(Successor('$x', '$z'), Equals('$z', '$y')))
+                    ,
+                    Not(Equals('$x', '$y'))
+                )
+            )
+        )
+    )
+
+    # Rule 1
+    formulas.append(
+        Forall('$x',
+                Or(
+                    And(Even('$x'), Not(Odd('$x'))),
+                    And(Odd('$x'), Not(Even('$x'))),
+            )
+        )
+    )
+
+    # Rule 2
+    formulas.append(
+        Forall('$x',
+            Forall('$y',
+                Implies(
+                    And(
+                        Even('$x'), Successor('$x', '$y')), 
+                        Odd('$y'),
+                )
+            )
+        )
+    )
+
+    # Rule 3
+    formulas.append(
+        Forall('$x',
+            Forall('$y',
+                Implies(
+                    And(
+                        Odd('$x'), 
+                        Successor('$x', '$y')
+                    ), 
+                    Even('$y'),
+                )
+            )
+        )
+    )
+
+    # Rule 4
+    formulas.append(
+        Forall('$x',
+            Forall('$y',
+                Implies(
+                    Successor('$x', '$y'),
+                    Larger('$y', '$x'),
+                )
+            )
+        )
+    )
+
+    # Rule 5
+    formulas.append(
+        Forall('$x',
+            Forall('$y',
+                Forall('$z',
+                    Implies(
+                        And(
+                            Larger('$x', '$y'), 
+                            Larger('$y', '$z')
+                        ),
+                        Larger('$x', '$z'),
+                    )
+                )
+            )
+        )
+    )
+
     # END_YOUR_CODE
     query = Forall('$x', Exists('$y', And(Even('$y'), Larger('$y', '$x'))))
     return (formulas, query)
@@ -171,13 +297,44 @@ def createRule1() -> GrammarRule:
     # Return a GrammarRule for 'every $Noun $Verb some $Noun'
     # Note: universal quantification should be outside existential quantification.
     # BEGIN_YOUR_CODE (our solution is 3 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    
+    # Every person likes some cat.
+    return GrammarRule('$Clause', ['every', '$Noun', '$Verb', 'some', '$Noun'], 
+        lambda  args: 
+            Forall('$x', 
+                Implies(
+                    Atom(args[0].title(), '$x'),
+                    Exists('$y', 
+                        And(
+                            Atom(args[1].title(), '$x', '$y'),
+                            Atom(args[2].title(), '$y'),
+                        )
+                    )
+                )
+            )
+        )          
     # END_YOUR_CODE
 
 def createRule2() -> GrammarRule:
     # Return a GrammarRule for 'there is some $Noun that every $Noun $Verb'
     # BEGIN_YOUR_CODE (our solution is 3 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+
+    # There is some cat that every person likes.
+    return GrammarRule('$Clause', ['there', 'is', 'some', '$Noun', 'that', 'every', '$Noun', '$Verb'], 
+        lambda args:
+            Exists('$x', 
+                And(
+                    Atom(args[0].title(), '$x'), 
+                    Forall('$y', 
+                        Implies(
+                            Atom(args[1].title(), '$y'), 
+                            Atom(args[2].title(), '$y', '$x')
+                        )
+                    )
+                )
+            )
+        )
+
     # END_YOUR_CODE
 
 def createRule3() -> GrammarRule:
