@@ -1,0 +1,19 @@
+# Unit limit per quarter. You can ignore this for the first
+# few questions in problem 2.
+minUnits 3
+maxUnits 4
+
+# These are the quarters that I need to fill out.
+# It is assumed that the quarters are sorted in chronological order.
+register Spr2022
+register Sum2022
+register Aut2022
+register Win2023
+
+# Courses I've already taken
+
+# Courses that I'm requesting
+request CS221 in Spr2022,Sum2022  #
+request CS229 in Spr2022,Sum2022  #
+request CS230 in Sum2022,Aut2022,Win2023    # 
+request CS224N or in Win2023    # 
