@@ -1,7 +1,5 @@
 import numpy as np
 import util
-import os
-import math
 
 def main(train_path, valid_path, save_path):
     """Problem: Logistic regression with Newton's Method.
@@ -14,6 +12,7 @@ def main(train_path, valid_path, save_path):
     x_train, y_train = util.load_dataset(train_path, add_intercept=True)
 
     # *** START CODE HERE ***
+    # Load vaidation set as well
     x_valid, y_valid = util.load_dataset(valid_path, add_intercept=True)
 
     # Train a logistic regression classifier
@@ -64,24 +63,33 @@ class LogisticRegression:
         # y is a flat array with 800 elements (800, 1)
         # x is (800,3)
         if self.theta is None:
-            self.theta = np.zeros(x.shape[1]) # implicitly, its dim is (1,3) but 3 element array
+            self.theta = np.zeros(x.shape[1])
 
-        while True:
+        error = np.inf
+        while error > self.eps:
             hypothesis = self.predict(x)
 
-            # Find average gradient of entire dataset
-            gradient = ((hypothesis - y) * x.T).mean(axis=1) # hypothesis is (800,) x.T is (3, 800), when multiplied get (3,800)
+            # Find average gradient of entire dataset (Use Gradient Ascent Rule)
+            #   hypothesis - y is (800,)
+            #   x.T is (3, 800). 
+            #   Its element-wise multiplied get (3,800)
+            gradient = (-(y - hypothesis) * x.T).mean(axis=1) # Course notes, p.17 and PS0 1 proof
 
             # Find hessian
-            hess = ((hypothesis * (1 - hypothesis)) * x.T) @ x / x.shape[1] # (3,3)
+            #   ((hypothesis * (1 - hypothesis)) * x.T) is (3,800)
+            #   x is (800,3)
+            hess = ((hypothesis * (1 - hypothesis)) * x.T) @ x # From PS0 1 proof
 
             # Perform Newton's Method
-            new_theta = self.theta - gradient @ np.linalg.inv(hess.T) # (3,)
+            new_theta = self.theta - np.linalg.inv(hess) @ gradient.T  # Course notes, p.19
+            
+            # Find error
+            error = np.abs((new_theta - self.theta).sum())
 
-            if np.abs((new_theta - self.theta).sum()) < self.eps:
-                return self
-            else:
-                self.theta = new_theta
+            # Update theta
+            self.theta = new_theta
+
+        return self
 
 
         # *** END CODE HERE ***
@@ -96,7 +104,7 @@ class LogisticRegression:
             Outputs of shape (n_examples,).
         """
         # *** START CODE HERE ***
-        z = np.matmul(self.theta, x.T) # (1,3) (3x800) = (1x800)
+        z = self.theta @ x.T # (1,3) (3x800) = (1x800)
         hypothesis = 1 / (1 + np.exp(-z)) # hypothesis
         return hypothesis
         # *** END CODE HERE ***
