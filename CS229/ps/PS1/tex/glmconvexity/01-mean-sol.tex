@@ -1,3 +1,41 @@
 \begin{answer}
-  Your solution here.
+
+We are given that $\eta$ is scalar and $\eta = \theta x$. We also know the following:
+
+By definition the integral of a continuous PDF is 1.
+    \begin{equation}
+        \int_{-\infty}^{\infty} p(y;\eta) dy = 1
+    \end{equation}
+If we take any derivative of the PDF with respect to $\eta$ of any order k on both sides the result is always zero. \label{eq:derivate_zero}
+    \begin{equation}
+         \int_{-\infty}^{\infty} \frac{\partial d^k}{\partial ^k\eta} p(y;\eta) dy = 0
+    \end{equation}
+If we describe the log loss function as $l = log(p(y;\eta))$ then its first derivative with respect to $\eta$ is:
+    \begin{equation}
+        \frac{\partial}{\partial\eta}l = \frac{\partial}{\partial\eta}(log(b(y)e^{\eta y - a(\eta)}) 
+    \end{equation}
+    \begin{equation}
+        \frac{\partial}{\partial\eta}(log(b(y) + log(e^{\eta y - a(\eta)})) = Y - \frac{\partial}{\partial\eta} a(\eta)
+    \end{equation}
+    \begin{equation} \label{eq:l'}
+        \frac{\partial}{\partial\eta}l = Y - \frac{\partial}{\partial\eta} a(\eta)
+    \end{equation}
+The definition of the expectation of the derivative of the log loss function is
+    \begin{equation}
+        E[\frac{\partial}{\partial\eta}l] = \int_{-\infty}^{\infty} (\frac{\partial}{\partial\eta}l) p(y;\eta) dy
+    \end{equation} However, we also know that this function = 0.
+
+
+Combining the above we see that
+\begin{equation}
+    E[ \frac{\partial}{\partial\eta}l]  = 0
+\end{equation}
+\begin{equation}
+    E[Y - \frac{\partial}{\partial\eta} a(\eta)] = 0
+\end{equation}
+\begin{equation}
+    E[Y] = \frac{\partial}{\partial\eta} a(\eta)
+\end{equation}
+
+
 \end{answer}

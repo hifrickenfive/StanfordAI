@@ -1,3 +1,39 @@
 \begin{answer}
-    Your solution here.
+    Define log likelihood of the PDF as $l=log(p(y;\eta))$, where its first derivative is
+    \begin{equation}
+        l^{'} = \frac{p'(y;\eta)}{p(y;\eta)}
+    \end{equation}
+And its second derivative is the below given the product rule
+    \begin{equation}
+        l'' = \frac{p''(y;\eta)}{p(y;\eta)} - (\frac{p'(y;\eta)}{p(y;\eta)})^2
+    \end{equation}
+ If we take the expectation of both sides
+    \begin{equation}
+        E[l''] = \int_{-\infty}^{\infty}\frac{p''(y;\eta)}{p(y;\eta)} p(y;\eta) dy - \int_{-\infty}^{\infty}(\frac{p'(y;\eta)}{p(y;\eta)})^2 p(y;\eta) dy
+    \end{equation}
+    \begin{equation}
+        E[l''] = \int_{-\infty}^{\infty}p''(y;\eta) dy - E[(l')^2]
+    \end{equation}
+    Recall from \ref{eq:derivate_zero} that the integral of a derivative (of any order) of the PDF is zero
+    \begin{equation}
+        E[l''] = 0 - E[(l')^2]    \end{equation}
+    But the mean of the log likelihood is zero so we have
+    \begin{equation} \label{eq:xx}
+        E[l^{''}] = - E[(l'- 0)^2 ] = -Var(l')
+    \end{equation}
+We had already found l' in \ref{eq:l'}. We can also find l''
+    \begin{equation} 
+        \frac{\partial}{\partial\eta}l = Y - \frac{\partial}{\partial\eta} a(\eta)
+    \end{equation}
+    \begin{equation}
+        \frac{\partial^2}{\partial^2\eta}l = - \frac{\partial^2}{\partial^2\eta} a(\eta)
+    \end{equation}
+ Substitute into \ref{eq:xx}
+    \begin{equation}
+        E[- \frac{\partial^2}{\partial^2\eta} a(\eta)] = -Var(Y - \frac{\partial}{\partial\eta} a(\eta))
+    \end{equation}
+This reduces to the below since adding or subtracting a constant to the variance, the variance doesn't change.
+    \begin{equation} \label{eq:varboy}
+        \frac{\partial^2}{\partial^2\eta} a(\eta) = Var(Y)
+    \end{equation}
 \end{answer}

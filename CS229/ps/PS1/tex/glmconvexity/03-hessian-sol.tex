@@ -1,3 +1,25 @@
 \begin{answer}
-  Your solution here.
+
+The negative log likelihood function is
+\begin{equation}
+    -log(p(y; \eta)) = -log(b(y) - log(exp(\eta y + a(\eta))
+\end{equation}
+Apply the chain rule
+\begin{equation}
+    -\nabla_\theta log(p(y; \eta)) = 0 - \frac{\partial}{\partial \eta}\eta y \nabla_\theta \eta + \frac{\partial}{\partial \eta}a(\eta)\nabla_\theta \eta
+\end{equation}
+Since $\eta = \theta^T x$
+\begin{equation}
+    -\nabla_\theta log(p(y; \eta)) = 0 - yx + \frac{\partial}{\partial \eta}a(\eta)x
+\end{equation}
+Evaluate the hessian, H
+\begin{equation}
+    H_{log(p(y; \eta))} = \frac{\partial^2}{\partial^2 \eta}a(\eta)x x^T
+\end{equation}
+From \ref{eq:varboy}
+\begin{equation}
+    H_{log(p(y; \eta))} = Var(Y)x x^T
+\end{equation}
+The hessian is a PSD and therefore the NLL loss of GLM is always convex because variances are non-negative and squares are also non-negative.
+
 \end{answer}
