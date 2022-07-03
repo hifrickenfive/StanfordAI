@@ -1,7 +1,7 @@
 import numpy as np
 import util
 
-def main(train_path, valid_path, save_path):
+def main(train_path, valid_path, save_path, plot_path):
     """Problem: Logistic regression with Newton's Method.
 
     Args:
@@ -20,7 +20,7 @@ def main(train_path, valid_path, save_path):
     clf.fit(x_train, y_train)
 
     # Plot decision boundary on top of validation set set
-    util.plot(x_valid, y_valid, clf.theta, "plot_of_decision_boundary")
+    util.plot(x_valid, y_valid, clf.theta, plot_path)
 
     # Use np.savetxt to save predictions on eval set to save_path
     np.savetxt(save_path, clf.predict(x_valid))
@@ -112,8 +112,10 @@ class LogisticRegression:
 if __name__ == '__main__':
     main(train_path='ds1_train.csv',
          valid_path='ds1_valid.csv',
-         save_path='logreg_pred_1.txt')
+         save_path='logreg_pred_1.txt',
+         plot_path='my_logreg1.jpeg')
 
     main(train_path='ds2_train.csv',
          valid_path='ds2_valid.csv',
-         save_path='logreg_pred_2.txt')
+         save_path='logreg_pred_2.txt',
+         plot_path='my_logreg2.jpeg')

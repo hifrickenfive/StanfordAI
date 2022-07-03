@@ -1,3 +1,128 @@
 \begin{answer}
-	Your solution here.
+We are given 
+\begin{equation} \label{eq:J1}
+    J(\theta) = -\frac{1}{n} \sum_{i=1}^{n} \big(
+    y^{(i)}log(h_\theta(x^{(i)})) + (1-y^{(i)}) log(1 -h_\theta x^{(i)})
+    \big)
+\end{equation}
+To find the $\nabla_\theta$J($\theta$) let's break $\nabla_\theta J(\theta)$ into two components.
+Let's first consider
+\begin{equation}
+    \nabla_\theta \sum_{i=1}^{n} 
+    y^{(i)}log(h_\theta(x^{(i)}))
+\end{equation}
+\begin{equation}
+    =  \sum_{i=1}^{n} 
+    y^{(i)} \nabla_\theta log(h_\theta(x^{(i)}))
+\end{equation}
+\begin{equation} \label{eq:A}
+    = \sum_{i=1}^{n} y^{(i)}\frac{\nabla_{\theta}h_{\theta}(x^{(i)})}{h_{\theta}(x^{(i)})}
+\end{equation}
+Where 
+\begin{equation} 
+    \nabla_\theta h_{\theta}(x^{(i)}) = \nabla_\theta g(\theta^T x^{(i)})
+\end{equation} 
+Let z = $\theta^T x^{(i)}$ and recall $g'(z) = g(z)(1-g(z))$. We then solve $\nabla_\theta g(\theta^T x^{(i)})$ with this property and the chain rule.
+\begin{equation} \label{eq:g}
+    \nabla_\theta h_{\theta}(x^{(i)}) = g(\theta^T x^{(i)})(1-g(\theta^T x^{(i)})) x^{(i)}
+\end{equation}
+Substituting \ref{eq:g} into \ref{eq:A} 
+\begin{equation} 
+        = \sum_{i=1}^{n} y^{(i)}
+        \frac{g(\theta^T x^{(i)})(1-g(\theta^T x^{(i)})) x^{(i)}}
+        {g(\theta^T x^{(i)})}
+\end{equation}
+
+\begin{equation}  \label{eq:Adone}
+        = \sum_{i=1}^{n} y^{(i)}
+        (1-g(\theta^T x^{(i)})) x^{(i)}
+\end{equation}
+
+Next, let's consider 
+\begin{equation}
+     \nabla_\theta \sum_{i=1}^{n} (1-y^{(i)}) log(1 -h_\theta (x^{(i)}))
+\end{equation}
+\begin{equation}
+     =  \sum_{i=1}^{n} (1-y^{(i)}) \nabla_\theta log(1 -h_\theta (x^{(i)}))
+\end{equation}
+\begin{equation}\label{eq:B}
+     =  \sum_{i=1}^{n} (1-y^{(i)}) 
+     \frac{ -\nabla_\theta h_\theta (x^{(i)})}
+     {1 -h_\theta (x^{(i)})}
+\end{equation}
+Substitute \ref{eq:g} into \ref{eq:B}
+\begin{equation}
+     =  \sum_{i=1}^{n} (1-y^{(i)}) 
+     \frac{ -g(\theta^T x^{(i)})(1-g(\theta^T x^{(i)})) x^{(i)}}
+     {1 -g(\theta^T x^{(i)})}
+\end{equation}
+\begin{equation} \label{eq:Bdone}
+     =  \sum_{i=1}^{n} (y^{(i)} - 1) g(\theta^T x^{(i)})x^{(i)}
+\end{equation}
+Combining \ref{eq:Adone} and \ref{eq:Bdone} back into $\nabla_\theta J(\theta)$ from \ref{eq:J1}, we have
+\begin{equation}
+    \nabla_\theta J(\theta) = -\frac{1}{n} \sum_{i=1}^{n} 
+    \big(
+    (1-g(\theta^T x^{(i)})) x^{(i)}
+    + (y^{(i)} - 1) g(\theta^T x^{(i)})x^{(i)}
+    \big)
+\end{equation
+\begin{equation}
+    = -\frac{1}{n} \sum_{i=1}^{n} 
+    \big(
+    y^{(i)}(1-g(\theta^T x^{(i)})) x^{(i)}
+    + (y^{(i)} - 1) g(\theta^T x^{(i)})x^{(i)}
+    \big)
+\end{equation}
+\begin{equation}
+    = -\frac{1}{n} \sum_{i=1}^{n} 
+    \big(
+    y^{(i)}x^{(i)} - y^{(i)}g(\theta^T x^{(i)})x^{(i)} +
+    y^{(i)}g(\theta^T x^{(i)})x^{(i)} - g(\theta^T x^{(i)})x^{(i)}
+    \big)
+\end{equation}
+\begin{equation}
+    = -\frac{1}{n} \sum_{i=1}^{n} 
+    \big(
+    y^{(i)}x^{(i)} - g(\theta^T x^{(i)})x^{(i)}
+    \big)
+\end{equation}
+\begin{equation}
+    H_\theta J(\theta) 
+    = -\frac{1}{n} \sum_{i=1}^{n} 
+    \big(
+    0 - \frac{\partial}{\partial \theta} g(\theta^T x^{(i)})x^{(i)}
+    \big)
+\end{equation}
+\begin{equation}
+    = -\frac{1}{n} \sum_{i=1}^{n} 
+    -  g(\theta^T x^{(i)})(1-g(\theta^T x^{(i)})) x^{(i)} x^{(i)}T
+\end{equation}
+\begin{equation}
+    = \frac{1}{n} \sum_{i=1}^{n} 
+    g(\theta^T x^{(i)})(1-g(\theta^T x^{(i)})) x^{(i)} x^{(i)}T
+\end{equation}
+Finally, we need to show that the hessian is a PSD for any vector z where $z= \theta^Tx$,  $h_\theta (x^{(i)}) = g(\theta^T x^{(i)})$ and $g(z) = \frac{1}{1+exp(-z)}$. So we need to show that the below is a PSD.
+\begin{equation}
+    z_\theta^T H_\theta J(\theta)z= z^T \frac{1}{n} \sum_{i=1}^{n} 
+    g(\theta^T x^{(i)})(1-g(\theta^T x^{(i)})) x^{(i)} x^{(i)}T z
+\end{equation}
+
+We know that $g(\theta^T x^{(i)}) = h_\theta (x^{(i)})$ and that the hypothesis function of classifiers outputs probabilities between 0 to 1. Thus
+\begin{equation}
+    0 \leq g(\theta^T x^{(i)})(1-g(\theta^T x^{(i)})) \leq   1
+\end{equation}
+We then have a scalar component, C in the below
+\begin{equation}
+    z_\theta^T H_\theta J(\theta)z= z^T \frac{1}{n} \sum_{i=1}^{n} 
+    C x^{(i)} x^{(i)}T z
+\end{equation}
+\begin{equation}
+    z_\theta^T H_\theta J(\theta)z = \frac{1}{n} \sum_{i=1}^{n} 
+    C  z^T x^{(i)} x^{(i)}T z  = \frac{1}{n} \sum_{i=1}^{n} 
+    C  (z^T x^{(i)})^2 
+\end{equation}
+Squares are always non-negative and \textit{n} in the summation is greater or equal to 1 for a non-trivial solution. Therefore, $H_\theta J(\theta)$ is a PSD.
+
+
 \end{answer}
