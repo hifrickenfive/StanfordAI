@@ -2,11 +2,16 @@ import numpy as np
 import util
 import sys
 
-sys.path.append('../linearclass')
+# Uncomment for gradescope. Doesn't work for me
+# sys.path.append('../linearclass')
+# from logreg import LogisticRegression
+
+# My workaround
+import os
+sys.path.append("..\\linearclass")
+from logreg import LogisticRegression
 
 ### NOTE : You need to complete logreg implementation first!
-
-from logreg import LogisticRegression
 
 # Character to replace with sub-problem letter in plot_path/save_path
 WILDCARD = 'X'
@@ -34,9 +39,25 @@ def main(train_path, valid_path, test_path, save_path):
 
     # Part (a): Train and test on true labels
     # Make sure to save predicted probabilities to output_path_true using np.savetxt()
+    x_train, y_train = util.load_dataset(train_path, 't', add_intercept=True)
+    clf = LogisticRegression()
+    clf.fit(x_train, y_train)
+    x_test, y_test = util.load_dataset(test_path, 't', add_intercept=True)
+    util.plot(x_test, y_test, clf.theta, 'my_ideal_case.jpeg')
+    np.savetxt(output_path_true, clf.predict(x_test))
+
+    # *** START CODE HERE ***
+    # Load vaidation set as well
+    valid_data, __ = util.load_dataset(valid_path, add_intercept=True)
 
     # Part (b): Train on y-labels and test on true labels
     # Make sure to save predicted probabilities to output_path_naive using np.savetxt()
+    x_train, y_train = util.load_dataset(train_path, add_intercept=True)
+    clf = LogisticRegression()
+    clf.fit(x_train, y_train)
+    x_test, y_test = util.load_dataset(test_path, 't', add_intercept=True)
+    util.plot(x_test, y_test, clf.theta, 'my_naive_case.jpeg')
+    np.savetxt(output_path_naive, clf.predict(x_test))
 
     # Part (f): Apply correction factor using validation set and test on true labels
 
