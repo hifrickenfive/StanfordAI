@@ -1,3 +1,4 @@
+# from unittest.mock import _CallValue
 import numpy as np
 import util
 import sys
@@ -39,11 +40,11 @@ def main(train_path, valid_path, test_path, save_path):
 
     # Part (a): Train and test on true labels
     # Make sure to save predicted probabilities to output_path_true using np.savetxt()
-    x_train, y_train = util.load_dataset(train_path, 't', add_intercept=True)
+    x_train, t_train = util.load_dataset(train_path, 't', add_intercept=True)
     clf = LogisticRegression()
-    clf.fit(x_train, y_train)
-    x_test, y_test = util.load_dataset(test_path, 't', add_intercept=True)
-    util.plot(x_test, y_test, clf.theta, 'my_ideal_case.jpeg')
+    clf.fit(x_train, t_train)
+    x_test, t_test = util.load_dataset(test_path, 't', add_intercept=True)
+    util.plot(x_test, t_test, clf.theta, 'my_ideal_case.jpeg')
     np.savetxt(output_path_true, clf.predict(x_test))
 
     # *** START CODE HERE ***
@@ -55,13 +56,20 @@ def main(train_path, valid_path, test_path, save_path):
     x_train, y_train = util.load_dataset(train_path, add_intercept=True)
     clf = LogisticRegression()
     clf.fit(x_train, y_train)
-    x_test, y_test = util.load_dataset(test_path, 't', add_intercept=True)
-    util.plot(x_test, y_test, clf.theta, 'my_naive_case.jpeg')
+    x_test, t_test = util.load_dataset(test_path, 't', add_intercept=True)
+    util.plot(x_test, t_test, clf.theta, 'my_naive_case.jpeg')
     np.savetxt(output_path_naive, clf.predict(x_test))
 
     # Part (f): Apply correction factor using validation set and test on true labels
-
     # Plot and use np.savetxt to save outputs to output_path_adjusted
+
+    x_valid, y_valid = util.load_dataset(valid_path, add_intercept=True)
+    Vplus = x_valid[y_valid == 1] # V+ = {x in V |y=1}
+    y_predict_Vplus = clf.predict(Vplus)
+    alpha = sum(y_predict_Vplus) / len(y_predict_Vplus)
+
+    np.savetxt(output_path_adjusted, 1/alpha*clf.predict(x_test))
+    util.plot(x_test, t_test, clf.theta, 'my_pos_corrected.jpg', correction=alpha)
 
     # *** END CODER HERE
 

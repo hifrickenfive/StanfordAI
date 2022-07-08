@@ -88,9 +88,9 @@ class GDA:
 
         # Eval theta as function of phi, mean1, mean0, covariance (ps1 1.5c)
         theta = (mean1 - mean0).T @ inv_covariance
-        theta0 = np.log(phi/(1-phi)) - 0.5*((mean1-mean0).T @ inv_covariance @ (mean1-mean0))
+        theta0 = -np.log((1-phi)/phi) - 0.5*(mean1.T @ inv_covariance @ mean1 - mean0.T @ inv_covariance @ mean0)
         self.theta = [theta0, theta[0], theta[1]] # each elem in thetas needs to be individually indexable because of plot util :<
-        print('end debug')
+        # print('end debug')
 
         # *** END CODE HERE ***
 
@@ -104,8 +104,8 @@ class GDA:
             Outputs of shape (n_examples,).
         """
         # *** START CODE HERE ***
-        y_pred = self.theta[1:] @ x.T + self.theta[0]
-        return (y_pred > 0).astype('int')
+        y_pred = self.theta[1:] @ x.T + self.theta[0] # this returns the score: how confident are we in predicting
+        return (y_pred > 0).astype('int') # to get predicted class label return 0s or 1s
         # *** END CODE HERE
 
 if __name__ == '__main__':

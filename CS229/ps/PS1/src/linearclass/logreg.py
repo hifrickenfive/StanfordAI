@@ -105,7 +105,7 @@ class LogisticRegression:
         """
         # *** START CODE HERE ***
         z = self.theta @ x.T # (1,3) (3x800) = (1x800)
-        hypothesis = 1 / (1 + np.exp(-z)) # hypothesis
+        hypothesis = 1 / (1 + np.exp(-z))
         return hypothesis
         # *** END CODE HERE ***
 

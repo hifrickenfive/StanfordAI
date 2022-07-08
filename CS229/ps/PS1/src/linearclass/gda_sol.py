@@ -63,6 +63,7 @@ class GDA:
         sigma_inv = np.linalg.inv(sigma)
         mu_diff = (mu1 - mu0).squeeze()
         self.theta[1:] = mu_diff @ sigma_inv
+
         self.theta[0] = (np.log(phi / (1 - phi))
                          - mu_diff @ sigma_inv @ mu_diff / 2)
         print('end debug')
