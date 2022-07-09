@@ -43,10 +43,16 @@ class LinearModel(object):
             X: Training example inputs. Shape (n_examples, 2).
         """
         # *** START CODE HERE ***
-        X_updated = X.reshape(-1, 1)
+        if X.shape[0] > 1:
+            column_base = X[:, 1]
+        else:
+            column_base = X
+
         for i in range(2, k+1):
-            X_updated = np.concatenate((X_updated, X **i), axis=1)
-        return X_updated
+            col = column_base**i
+            col = col.reshape(-1, 1)
+            X = np.concatenate((X, col), axis=1)
+        return X 
         # *** END CODE HERE ***
 
     def create_sin(self, k, X):
@@ -81,6 +87,7 @@ class LinearModel(object):
 
 def run_exp(train_path, sine=False, ks=[1, 2, 3, 5, 10, 20], filename='plot.png'):
     train_x,train_y=util.load_dataset(train_path,add_intercept=True)
+
     plot_x = np.ones([1000, 2])
     plot_x[:, 1] = np.linspace(-factor*np.pi, factor*np.pi, 1000)
     plt.figure()
@@ -92,9 +99,18 @@ def run_exp(train_path, sine=False, ks=[1, 2, 3, 5, 10, 20], filename='plot.png'
         '''
         # *** START CODE HERE ***
 
+        # Train on train_x and train_y
+        reg = LinearModel()
+        train_x_poly  = reg.create_poly(k, train_x)
+        reg.fit(train_x_poly, train_y)
+
+        # Predict on plot_x
+        plot_x_poly = reg.create_poly(k, plot_x)
+        plot_y = reg.predict(plot_x_poly)
+
         # *** END CODE HERE ***
         '''
-        Here plot_y are the predictions of the linear model on the plot_x data
+        Here y_predict are the predictions of the linear model on the plot_x data
         '''
         plt.ylim(-2, 2)
         plt.plot(plot_x[:, 1], plot_y, label='k=%d' % k)
@@ -113,15 +129,8 @@ def main(train_path, small_path, eval_path):
     x_small, y_small = util.load_dataset(small_path)
     x_test, y_test = util.load_dataset(eval_path)
 
-    clf = LinearModel()
-    x_poly  = clf.create_poly(4, x_train)
-    clf.fit(x_poly, y_train)
-    y_predict = clf.predict(x_poly)
+    run_exp(train_path, sine=False, ks=[3], filename='my_poly3.png')
 
-    plt.scatter(x_train, y_train, color='b')
-    plt.scatter(x_train, y_predict, color='r')
-    plt.legend('val', 'predicted')
-    plt.show()
 
     # *** END CODE HERE ***
 
