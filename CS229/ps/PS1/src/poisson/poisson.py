@@ -16,7 +16,19 @@ def main(lr, train_path, eval_path, save_path):
 
     # *** START CODE HERE ***
     # Fit a Poisson Regression model
+    clf = PoissonRegression()
+    clf.fit(x_train, y_train)
 
+    # Load val set
+    x_val, y_val = util.load_dataset(eval_path, add_intercept=True)
+    y_predict = clf.predict(x_val)
+
+    # My plot function
+    plt.scatter(y_val, y_predict)
+    plt.xlabel('True Counts')
+    plt.ylabel('Predicted Counts')
+    plt.title('Predicted Counts vs. True Counts Poisson GLM')
+    plt.savefig('my_predict_vs_validation')
     # *** END CODE HERE ***
 
 
@@ -53,6 +65,29 @@ class PoissonRegression:
             y: Training example labels. Shape (n_examples,).
         """
         # *** START CODE HERE ***
+        # Initialise
+        if self.theta is None:
+            self.theta = np.zeros(x.shape[1]) # (1,5) We are solving for the weight for a SINGLE example
+        iter = 1
+        error = np.inf
+
+        while abs(error) > self.eps:
+            # print(iter) # Debug
+
+            # Full batch SGA
+            y_predict = self.predict(x) # (2500,1)
+            gradient  = ((y-y_predict)* x.T).mean(axis=1) # Full batch. Take the mean of each column. # (2500,)^T (2500, 5) -> (2500,5). Mean flattens into (1,5)
+            theta_update = self.theta +  self.step_size*gradient # Eqn derived in PS1, Q3c
+            error = np.linalg.norm(theta_update - self.theta) # Scalar / euclidean distance
+
+            # Max iter stop condition
+            if iter > self.max_iter:
+                return self.theta
+            else:
+                self.theta = theta_update
+                iter +=1
+
+        return self.theta
 
         # *** END CODE HERE ***
 
@@ -66,7 +101,8 @@ class PoissonRegression:
             Floating-point prediction for each input, shape (n_examples,).
         """
         # *** START CODE HERE ***
-
+        y_predict = np.exp(x @ self.theta.T) # (2500,5) (5,1) results in 2500,1
+        return y_predict
         # *** END CODE HERE ***
 
 if __name__ == '__main__':
