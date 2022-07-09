@@ -26,7 +26,11 @@ class LinearModel(object):
             y: Training example labels. Shape (n_examples,).
         """
         # *** START CODE HERE ***
+        if self.theta is None:
+            self.theta = np.zeros(X[0].shape) # solving for theta, which is the size of one sample
 
+        # Update thetha via the normal equations
+        self.theta = np.linalg.solve(X.T @ X, X.T@y) # (A,b). Don't solve inverse matrices directly because could be numerically unstable
         # *** END CODE HERE ***
 
     def create_poly(self, k, X):
@@ -39,7 +43,10 @@ class LinearModel(object):
             X: Training example inputs. Shape (n_examples, 2).
         """
         # *** START CODE HERE ***
-
+        X_updated = X.reshape(-1, 1)
+        for i in range(2, k+1):
+            X_updated = np.concatenate((X_updated, X **i), axis=1)
+        return X_updated
         # *** END CODE HERE ***
 
     def create_sin(self, k, X):
@@ -66,7 +73,9 @@ class LinearModel(object):
             Outputs of shape (n_examples,).
         """
         # *** START CODE HERE ***
-
+        self.theta.reshape(-1,1)
+        y_predict =  X @ self.theta.T
+        return y_predict
         # *** END CODE HERE ***
 
 
@@ -100,6 +109,19 @@ def main(train_path, small_path, eval_path):
     Run all experiments
     '''
     # *** START CODE HERE ***
+    x_train, y_train = util.load_dataset(train_path)
+    x_small, y_small = util.load_dataset(small_path)
+    x_test, y_test = util.load_dataset(eval_path)
+
+    clf = LinearModel()
+    x_poly  = clf.create_poly(4, x_train)
+    clf.fit(x_poly, y_train)
+    y_predict = clf.predict(x_poly)
+
+    plt.scatter(x_train, y_train, color='b')
+    plt.scatter(x_train, y_predict, color='r')
+    plt.legend('val', 'predicted')
+    plt.show()
 
     # *** END CODE HERE ***
 
