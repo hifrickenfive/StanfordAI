@@ -29,6 +29,7 @@ def main(lr, train_path, eval_path, save_path):
     plt.ylabel('Predicted Counts')
     plt.title('Predicted Counts vs. True Counts Poisson GLM')
     plt.savefig('my_predict_vs_validation')
+
     # *** END CODE HERE ***
 
 
@@ -72,7 +73,7 @@ class PoissonRegression:
         error = np.inf
 
         while abs(error) > self.eps:
-            # print(iter) # Debug
+            print(iter) # Debug
 
             # Full batch SGA
             y_predict = self.predict(x) # (2500,1)
