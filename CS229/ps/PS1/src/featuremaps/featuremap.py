@@ -49,8 +49,8 @@ class LinearModel(object):
             column_base = X
 
         for i in range(2, k+1):
-            col = column_base**i
-            col = col.reshape(-1, 1)
+            col = np.array(column_base**i)
+            col = col.reshape(-1, 1) # Required to convert from (n,) to (n,1)
             X = np.concatenate((X, col), axis=1)
         return X 
         # *** END CODE HERE ***
@@ -64,7 +64,20 @@ class LinearModel(object):
             X: Training example inputs. Shape (n_examples, 2).
         """
         # *** START CODE HERE ***
+        if X.shape[0] > 1:
+            column_base = X[:, 1]
+        else:
+            column_base = X
 
+        for i in range(2, k+1):
+            col = np.array(column_base**i)
+            col = col.reshape(-1, 1) # Required to convert from (n,) to (n,1)
+            X = np.concatenate((X, col), axis=1)
+
+        col_sine =np.sin(column_base)
+        col_sine = col_sine.reshape(-1, 1) # Required to convert from (n,) to (n,1)
+        X = np.concatenate((X, col_sine), axis=1)
+        return X 
         # *** END CODE HERE ***
 
     def predict(self, X):
@@ -79,7 +92,7 @@ class LinearModel(object):
             Outputs of shape (n_examples,).
         """
         # *** START CODE HERE ***
-        self.theta.reshape(-1,1)
+        self.theta.reshape(-1,1) # Required to convert from (n,) to (n,1)
         y_predict =  X @ self.theta.T
         return y_predict
         # *** END CODE HERE ***
@@ -101,12 +114,28 @@ def run_exp(train_path, sine=False, ks=[1, 2, 3, 5, 10, 20], filename='plot.png'
 
         # Train on train_x and train_y
         reg = LinearModel()
-        train_x_poly  = reg.create_poly(k, train_x)
-        reg.fit(train_x_poly, train_y)
 
-        # Predict on plot_x
-        plot_x_poly = reg.create_poly(k, plot_x)
-        plot_y = reg.predict(plot_x_poly)
+
+        if sine is False:
+            # Generate feature map for training data
+            train_x_poly  = reg.create_poly(k, train_x) 
+            # Train
+            reg.fit(train_x_poly, train_y)
+
+            # Generate feature map for unseen data
+            plot_x_poly = reg.create_poly(k, plot_x) 
+            # Predict on unseen feature map
+            plot_y = reg.predict(plot_x_poly)
+        else:
+            # Generate sine feature map
+            train_x_sine  = reg.create_sin(k, train_x)
+            # Train
+            reg.fit(train_x_sine, train_y)
+
+            # Generate feature map for unseen data
+            plot_x_sine = reg.create_sin(k, plot_x)
+            # Predict on unseen feature map
+            plot_y = reg.predict(plot_x_sine)
 
         # *** END CODE HERE ***
         '''
@@ -130,7 +159,8 @@ def main(train_path, small_path, eval_path):
     x_test, y_test = util.load_dataset(eval_path)
 
     run_exp(train_path, sine=False, ks=[3], filename='my_poly3.png')
-
+    run_exp(train_path, sine=False, filename='my_polys.png')
+    run_exp(train_path, sine=True, filename='my_sine.png')
 
     # *** END CODE HERE ***
 
