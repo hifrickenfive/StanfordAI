@@ -115,7 +115,6 @@ def run_exp(train_path, sine=False, ks=[1, 2, 3, 5, 10, 20], filename='plot.png'
         # Train on train_x and train_y
         reg = LinearModel()
 
-
         if sine is False:
             # Generate feature map for training data
             train_x_poly  = reg.create_poly(k, train_x) 
@@ -155,12 +154,13 @@ def main(train_path, small_path, eval_path):
     '''
     # *** START CODE HERE ***
     x_train, y_train = util.load_dataset(train_path)
-    x_small, y_small = util.load_dataset(small_path)
+    x_small, y_small = util.load_dataset(small_path) 
     x_test, y_test = util.load_dataset(eval_path)
 
     run_exp(train_path, sine=False, ks=[3], filename='my_poly3.png')
-    run_exp(train_path, sine=False, filename='my_polys.png')
-    run_exp(train_path, sine=True, filename='my_sine.png')
+    run_exp(train_path, sine=False, ks=[3,5,10,20], filename='my_polys.png')
+    run_exp(train_path, sine=True, ks=[0,1,2,3,5,10,20],filename='my_sine.png')
+    run_exp(small_path, sine=False, ks=[1,2,5,10,20], filename='my_small.png')
 
     # *** END CODE HERE ***
 

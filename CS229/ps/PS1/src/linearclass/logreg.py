@@ -84,8 +84,7 @@ class LogisticRegression:
             new_theta = self.theta - np.linalg.inv(hess) @ gradient.T  # Course notes, p.19
             
             # Find error
-            # error = np.abs((new_theta - self.theta).sum())
-            error = np.linalg.norm(new_theta - self.theta)
+            error = np.linalg.norm(new_theta - self.theta, ord=1)
 
             # Update theta
             self.theta = new_theta

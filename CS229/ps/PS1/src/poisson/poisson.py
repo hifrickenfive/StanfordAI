@@ -79,7 +79,7 @@ class PoissonRegression:
             y_predict = self.predict(x) # (2500,1)
             gradient  = ((y-y_predict)* x.T).mean(axis=1) # Full batch. Take the mean of each column. # (2500,)^T (2500, 5) -> (2500,5). Mean flattens into (1,5)
             theta_update = self.theta +  self.step_size*gradient # Eqn derived in PS1, Q3c
-            error = np.linalg.norm(theta_update - self.theta) # Scalar / euclidean distance
+            error = np.linalg.norm(theta_update - self.theta, ord=1) # Scalar / euclidean distance
 
             # Max iter stop condition
             if iter > self.max_iter:

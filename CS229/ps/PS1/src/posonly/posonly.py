@@ -4,13 +4,13 @@ import util
 import sys
 
 # Uncomment for gradescope. Doesn't work for me
-# sys.path.append('../linearclass')
-# from logreg import LogisticRegression
-
-# My workaround
-import os
-sys.path.append("..\\linearclass")
+sys.path.append('../linearclass')
 from logreg import LogisticRegression
+
+# My workaround below
+# import os
+# sys.path.append("..\\linearclass")
+# from logreg import LogisticRegression
 
 ### NOTE : You need to complete logreg implementation first!
 
