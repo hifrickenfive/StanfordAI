@@ -21,7 +21,9 @@ def get_words(message):
     """
 
     # *** START CODE HERE ***
-
+    message = message.lower()
+    words = message.split(" ")
+    return words
     # *** END CODE HERE ***
 
 
@@ -42,7 +44,21 @@ def create_dictionary(messages):
     """
 
     # *** START CODE HERE ***
+    counter = dict()
+    word_dict = dict()
+    i = 1
 
+    for message in messages:
+        words = get_words(message)
+        for word in words:
+            if word not in counter:
+                counter[word] = 1
+            else:
+                counter[word] += 1
+                if counter[word] == 5:
+                    word_dict[word] = i
+                    i += 1
+    return word_dict
     # *** END CODE HERE ***
 
 
@@ -67,6 +83,23 @@ def transform_text(messages, word_dictionary):
         j-th vocabulary word in the i-th message.
     """
     # *** START CODE HERE ***
+    transformed_text = []
+    for message in messages:
+        # print(message)
+        array = []
+
+        words = get_words(message)
+        for word in words:
+            if word not in word_dictionary:
+                continue
+            else:
+                array.append(word_dictionary[word])
+        # print(array)
+        transformed_text.append(array)
+
+    transformed_text = np.array(transformed_text)
+
+    return transformed_text
 
     # *** END CODE HERE ***
 
