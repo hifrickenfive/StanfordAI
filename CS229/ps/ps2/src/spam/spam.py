@@ -114,23 +114,31 @@ def fit_naive_bayes_model(matrix, labels):
     """
 
     # *** START CODE HERE ***
+
     # Count labels, evaluate phi_y
     count_y1 = len(labels[labels == 1])
-    phi_y = count_y1 / len(labels)
+    phi = count_y1 / len(labels)
 
     # Count all words when labels = 1 or 0
     msg_lengths = np.sum(matrix,axis=1) # (4457, 1)
-    sum_all_words_and_y1 = sum(msg_lengths*labels) # 10767
-    sum_all_words_and_y0 = sum(msg_lengths) - sum_all_words_and_y1 # 43773
+    sum_all_words_and_y1 = sum(msg_lengths[labels==1]) # 11134.0
+    sum_all_words_and_y0 = sum(msg_lengths) - sum_all_words_and_y1 # 44796. If summed = 55930
+    
+    # sum_all_words_and_y1 = sum(msg_lengths*labels) # 10767
+    # sum_all_words_and_y0 = sum(msg_lengths) - sum_all_words_and_y1 # 43773. If summed = 54540
     
     # Count specific words when labels = 1 or 0
-    word_count_and_y1 = np.sum(matrix[labels==1], axis=0)
-    word_count_and_y0 = np.sum(matrix[labels==0], axis=0)
+    word_count_and_y1 = np.sum(matrix[labels==1], axis=0) # if summed = 11134.0
+    word_count_and_y0 = np.sum(matrix[labels==0], axis=0) # if summed = 44796.0. Total is 55930
 
     # Evaluate phi_k|y, conditional probability of specific word when label = 1 or 0
-    phi_k_y1 = word_count_and_y1 / sum_all_words_and_y1
-    phi_k_y0 = word_count_and_y0 / sum_all_words_and_y0
-    print('stop')
+    # With laplace smooth. See p14 CS229 lectures notes 2
+    vocab_length = matrix.shape[1] # 1758
+    phi_y1 = (word_count_and_y1 + 1) / (sum_all_words_and_y1 + vocab_length)
+    phi_y0 = (word_count_and_y0 + 1)/ (sum_all_words_and_y0 + vocab_length)
+    print(phi, phi_y1, phi_y0)
+
+    return phi, phi_y1, phi_y0
     # *** END CODE HERE ***
 
 
@@ -147,7 +155,8 @@ def predict_from_naive_bayes_model(model, matrix):
     Returns: A numpy array containg the predictions from the model
     """
     # *** START CODE HERE ***
-
+    phi, phi0, phi1 = model
+    
     # *** END CODE HERE ***
 
 
