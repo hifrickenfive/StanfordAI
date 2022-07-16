@@ -138,7 +138,7 @@ def fit_naive_bayes_model(matrix, labels):
     phi_y0 = (word_count_and_y0 + 1)/ (sum_all_words_and_y0 + vocab_length)
     print(phi, phi_y1, phi_y0)
 
-    return phi, phi_y1, phi_y0
+    return phi, phi_y0, phi_y1
     # *** END CODE HERE ***
 
 
@@ -155,8 +155,13 @@ def predict_from_naive_bayes_model(model, matrix):
     Returns: A numpy array containg the predictions from the model
     """
     # *** START CODE HERE ***
-    phi, phi0, phi1 = model
+    phi, phi_y0, phi_y1 = model
     
+    prob_y0 = np.log(1 - phi) + np.sum(matrix * np.log(phi_y0), axis=1)
+    prob_y1 = np.log(phi) + np.sum(matrix * np.log(phi_y1), axis=1)
+
+    y_predicted = (prob_y1 > prob_y0).astype(np.int64)
+    return y_predicted 
     # *** END CODE HERE ***
 
 
@@ -173,7 +178,7 @@ def get_top_five_naive_bayes_words(model, dictionary):
     Returns: A list of the top five most indicative words in sorted order with the most indicative first
     """
     # *** START CODE HERE ***
-
+    phi, phi0, phi1, model
     # *** END CODE HERE ***
 
 
@@ -222,7 +227,8 @@ def main():
 
     np.savetxt('spam_naive_bayes_predictions', naive_bayes_predictions)
 
-    naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels)
+    naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels) 
+    # predicts 65 spam, True spam is 67, 0.978494623655914
 
     print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
 
