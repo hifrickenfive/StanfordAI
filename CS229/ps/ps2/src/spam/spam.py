@@ -46,13 +46,13 @@ def create_dictionary(messages):
     # *** START CODE HERE ***
     counter = dict()
     word_dict = dict()
-    i = 1
+    i = 0
 
     for message in messages:
         words = get_words(message)
         for word in words:
             if word not in counter:
-                counter[word] = 1
+                counter[word] = 0 # start at zero because used as col index for np matrix
             else:
                 counter[word] += 1
                 if counter[word] == 5:
@@ -83,25 +83,17 @@ def transform_text(messages, word_dictionary):
         j-th vocabulary word in the i-th message.
     """
     # *** START CODE HERE ***
-    transformed_text = []
-    for message in messages:
-        # print(message)
-        array = []
+    transformed_text = np.zeros([len(messages), len(word_dictionary)])
 
-        words = get_words(message)
-        for word in words:
-            if word not in word_dictionary:
-                continue
-            else:
-                array.append(word_dictionary[word])
-        # print(array)
-        transformed_text.append(array)
-
-    transformed_text = np.array(transformed_text)
-    transformed_text = np.reshape(transformed_text, (-1,1))
-
+    for msg_idx, msg in enumerate(messages):
+        print(msg)
+        word_counts = collections.Counter(get_words(msg))
+        for word, count in word_counts.items():
+            if word in word_dictionary:
+                col_idx = word_dictionary[word]
+                transformed_text[msg_idx, col_idx] = count
+                print(f'key: {word}, count: {count}, col_idx: {col_idx}')
     return transformed_text
-
     # *** END CODE HERE ***
 
 
@@ -147,8 +139,8 @@ def fit_naive_bayes_model(matrix, labels):
                     count_wrd_and_y0[wrd_int] += 1
             print(msg, labels[msg_idx], wrd_int, count_wrd_and_y0, count_wrd_and_y1)
     
-    phi_j_given_y1
-    phi_
+    # phi_j_given_y1
+    # phi_
     # *** END CODE HERE ***
 
 
