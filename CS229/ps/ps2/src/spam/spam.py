@@ -98,6 +98,7 @@ def transform_text(messages, word_dictionary):
         transformed_text.append(array)
 
     transformed_text = np.array(transformed_text)
+    transformed_text = np.reshape(transformed_text, (-1,1))
 
     return transformed_text
 
@@ -121,7 +122,33 @@ def fit_naive_bayes_model(matrix, labels):
     """
 
     # *** START CODE HERE ***
+    # Count labels, evaluate phi_y
+    count_y1 = len(labels[labels==0])
+    count_y0 = len(labels[labels==1])
+    phi_y = count_y1 / len(labels)
 
+    # Count joint event of word in msg occuring and label
+    count_wrd_and_y1 = dict()
+    count_wrd_and_y0 = dict()
+
+    for msg_idx in range(0, len(matrix)):
+        msg = matrix[msg_idx][0]
+        for wrd_idx in range(0, len(msg)):
+            wrd_int = msg[wrd_idx]
+            if labels[msg_idx] == 1:
+                if wrd_int not in count_wrd_and_y1:
+                    count_wrd_and_y1[wrd_int] = 1
+                else:
+                    count_wrd_and_y1[wrd_int] += 1
+            else:
+                if wrd_int not in count_wrd_and_y0:   
+                    count_wrd_and_y0[wrd_int] = 1
+                else:
+                    count_wrd_and_y0[wrd_int] += 1
+            print(msg, labels[msg_idx], wrd_int, count_wrd_and_y0, count_wrd_and_y1)
+    
+    phi_j_given_y1
+    phi_
     # *** END CODE HERE ***
 
 
@@ -193,7 +220,7 @@ def main():
 
     train_matrix = transform_text(train_messages, dictionary)
 
-    np.savetxt('spam_sample_train_matrix', train_matrix[:100,:])
+    np.savetxt('spam_sample_train_matrix', train_matrix[:100,:], fmt='%s')
 
     val_matrix = transform_text(val_messages, dictionary)
     test_matrix = transform_text(test_messages, dictionary)
