@@ -124,9 +124,6 @@ def fit_naive_bayes_model(matrix, labels):
     sum_all_words_and_y1 = sum(msg_lengths[labels==1]) # 11134.0
     sum_all_words_and_y0 = sum(msg_lengths) - sum_all_words_and_y1 # 44796. If summed = 55930
     
-    # sum_all_words_and_y1 = sum(msg_lengths*labels) # 10767
-    # sum_all_words_and_y0 = sum(msg_lengths) - sum_all_words_and_y1 # 43773. If summed = 54540
-    
     # Count specific words when labels = 1 or 0
     word_count_and_y1 = np.sum(matrix[labels==1], axis=0) # if summed = 11134.0
     word_count_and_y0 = np.sum(matrix[labels==0], axis=0) # if summed = 44796.0. Total is 55930
@@ -178,7 +175,15 @@ def get_top_five_naive_bayes_words(model, dictionary):
     Returns: A list of the top five most indicative words in sorted order with the most indicative first
     """
     # *** START CODE HERE ***
-    phi, phi0, phi1, model
+    __, phi_y0, phi_y1 = model
+    inv_dictionary = {v: k for k, v in dictionary.items()}
+
+    spam_strength = np.log(phi_y1 / phi_y0)
+    sort_idx = np.argsort(spam_strength) # sorts lowest to highest
+    top5_idx = sort_idx[-5:] # get last 5 elements
+
+    top5_spam_words = [inv_dictionary[idx] for idx in top5_idx]
+    return top5_spam_words
     # *** END CODE HERE ***
 
 
