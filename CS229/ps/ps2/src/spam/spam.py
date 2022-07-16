@@ -52,7 +52,7 @@ def create_dictionary(messages):
         words = get_words(message)
         for word in words:
             if word not in counter:
-                counter[word] = 0 # start at zero because used as col index for np matrix
+                counter[word] = 1
             else:
                 counter[word] += 1
                 if counter[word] == 5:
@@ -86,13 +86,13 @@ def transform_text(messages, word_dictionary):
     transformed_text = np.zeros([len(messages), len(word_dictionary)])
 
     for msg_idx, msg in enumerate(messages):
-        print(msg)
+        # print(msg)
         word_counts = collections.Counter(get_words(msg))
         for word, count in word_counts.items():
             if word in word_dictionary:
                 col_idx = word_dictionary[word]
                 transformed_text[msg_idx, col_idx] = count
-                print(f'key: {word}, count: {count}, col_idx: {col_idx}')
+                # print(f'key: {word}, count: {count}, col_idx: {col_idx}')
     return transformed_text
     # *** END CODE HERE ***
 
@@ -115,32 +115,22 @@ def fit_naive_bayes_model(matrix, labels):
 
     # *** START CODE HERE ***
     # Count labels, evaluate phi_y
-    count_y1 = len(labels[labels==0])
-    count_y0 = len(labels[labels==1])
+    count_y1 = len(labels[labels == 1])
     phi_y = count_y1 / len(labels)
 
-    # Count joint event of word in msg occuring and label
-    count_wrd_and_y1 = dict()
-    count_wrd_and_y0 = dict()
-
-    for msg_idx in range(0, len(matrix)):
-        msg = matrix[msg_idx][0]
-        for wrd_idx in range(0, len(msg)):
-            wrd_int = msg[wrd_idx]
-            if labels[msg_idx] == 1:
-                if wrd_int not in count_wrd_and_y1:
-                    count_wrd_and_y1[wrd_int] = 1
-                else:
-                    count_wrd_and_y1[wrd_int] += 1
-            else:
-                if wrd_int not in count_wrd_and_y0:   
-                    count_wrd_and_y0[wrd_int] = 1
-                else:
-                    count_wrd_and_y0[wrd_int] += 1
-            print(msg, labels[msg_idx], wrd_int, count_wrd_and_y0, count_wrd_and_y1)
+    # Count all words when labels = 1 or 0
+    msg_lengths = np.sum(matrix,axis=1) # (4457, 1)
+    sum_all_words_and_y1 = sum(msg_lengths*labels) # 10767
+    sum_all_words_and_y0 = sum(msg_lengths) - sum_all_words_and_y1 # 43773
     
-    # phi_j_given_y1
-    # phi_
+    # Count specific words when labels = 1 or 0
+    word_count_and_y1 = np.sum(matrix[labels==1], axis=0)
+    word_count_and_y0 = np.sum(matrix[labels==0], axis=0)
+
+    # Evaluate phi_k|y, conditional probability of specific word when label = 1 or 0
+    phi_k_y1 = word_count_and_y1 / sum_all_words_and_y1
+    phi_k_y0 = word_count_and_y0 / sum_all_words_and_y0
+    print('stop')
     # *** END CODE HERE ***
 
 
