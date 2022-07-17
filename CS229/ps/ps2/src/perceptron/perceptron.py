@@ -6,7 +6,7 @@ import numpy as np
 import util
 
 
-def initial_state():
+def initial_state(train_x):
     """Return the initial state for the perceptron.
 
     This function computes and then returns the initial state of the perceptron.
@@ -14,9 +14,13 @@ def initial_state():
     contain the state of the perceptron.
 
     """
-
     # *** START CODE HERE ***
+    shape = (len(train_x), 1)
+    beta = np.zeros(shape)
 
+    return {'current_idx': 0, 
+            'beta': beta, 
+            'train_x': train_x}
     # *** END CODE HERE ***
 
 
@@ -34,6 +38,20 @@ def predict(state, kernel, x_i):
         Returns the prediction (i.e 0 or 1)
     """
     # *** START CODE HERE ***
+    beta = state['beta']
+
+    shape = (len(state['train_x']), 1)
+    kernel_results = np.zeros(shape)
+
+    for h, x_h in enumerate(state['train_x']):
+        kernel_results[h] = kernel(x_h, x_i)
+        if h == state['current_idx']:
+            break
+    
+    score = np.dot(beta.T, kernel_results)
+    y_pred = sign(score)
+
+    return y_pred
 
     # *** END CODE HERE ***
 
@@ -49,7 +67,13 @@ def update_state(state, kernel, learning_rate, x_i, y_i):
         y_i: A 0 or 1 indicating the label for a single instance
     """
     # *** START CODE HERE ***
+    beta = state['beta'] 
+    i = state['current_idx']
 
+    y_pred = predict(state, kernel, x_i)
+    beta[i] += learning_rate * (y_i - y_pred)
+
+    state['current_idx'] += 1
     # *** END CODE HERE ***
 
 
@@ -109,7 +133,7 @@ def train_perceptron(kernel_name, kernel, learning_rate):
     """
     train_x, train_y = util.load_csv('train.csv')
 
-    state = initial_state()
+    state = initial_state(train_x)
 
     for x_i, y_i in zip(train_x, train_y):
         update_state(state, kernel, learning_rate, x_i, y_i)
