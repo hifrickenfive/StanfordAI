@@ -21,6 +21,13 @@ def softmax(x):
         A 2d numpy float array containing the softmax results of shape batch_size x number_of_classes
     """
     # *** START CODE HERE ***
+    # exp = np.exp(x - np.max(x))
+    # return exp / np.sum(exp)
+
+    x_max = np.max(x, axis=1, keepdims=True)
+    x_exp = np.exp(x - x_max)
+    sum_x_exp = np.sum(x_exp, axis=1, keepdims=True)
+    return x_exp / sum_x_exp
 
     # *** END CODE HERE ***
 
@@ -35,7 +42,8 @@ def sigmoid(x):
         A numpy float array containing the sigmoid results
     """
     # *** START CODE HERE ***
-
+    sig = 1 / (1 + np.exp(-x))
+    return sig
     # *** END CODE HERE ***
 
 def get_initial_params(input_size, num_hidden, num_output):
@@ -63,8 +71,13 @@ def get_initial_params(input_size, num_hidden, num_output):
     Returns:
         A dict mapping parameter names to numpy arrays
     """
+    W1 = np.random.randn(num_hidden, input_size)
+    b1 = np.zeros(num_hidden)
 
-    # *** START CODE HERE ***
+    W2 = np.random.randn(num_output, num_hidden)
+    b2 = np.zeros(num_output)
+
+    return {'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
 
     # *** END CODE HERE ***
 
@@ -87,7 +100,22 @@ def forward_prop(data, labels, params):
             3. The average loss for these data elements
     """
     # *** START CODE HERE ***
+    W1 = params['W1']
+    b1 = params['b1']
+    W2 = params['W2']
+    b2 = params['b2']
 
+    Z1 = data @ W1.T + b1
+    A1 = sigmoid(Z1)
+
+    Z2 = A1 @ W2.T + b2
+    y_pred = softmax(Z2)
+
+    num_samples = len(data)
+    sum_cross_entropy_loss = - np.sum(labels * np.log(y_pred)) # per batch
+    av_cross_entropy_loss = sum_cross_entropy_loss / num_samples # per sample
+
+    return A1, y_pred, av_cross_entropy_loss
     # *** END CODE HERE ***
 
 def backward_prop(data, labels, params, forward_prop_func):
@@ -111,7 +139,27 @@ def backward_prop(data, labels, params, forward_prop_func):
             W1, W2, b1, and b2
     """
     # *** START CODE HERE ***
+    num_samples = len(data)
 
+    # Forward
+    A1, y_pred, __ = forward_prop_func(data, labels, params)
+
+    # Backward
+    dLdZ2 = y_pred - labels # From PS2 2022, Q5a.
+
+    dZ2dW2 = A1
+    dLdW2 = dLdZ2.T @ dZ2dW2 / num_samples 
+    dLdb2 = np.sum(dLdZ2, axis=0) / num_samples # sums the columns
+
+    dZ2dA1 = params['W2']
+    dLdA1 = dLdZ2 @ dZ2dA1
+    dA1dZ1 = A1 * (1 - A1) # Gradient of sigmoid
+    dLdZ1 = dLdA1 * dA1dZ1  # Element-wise trick to get expected dimensions
+    dZ1dW1 = data
+    dLdW1 = dLdZ1.T @ dZ1dW1 / num_samples
+    dLdb1 = np.sum(dLdZ1, axis=0) / num_samples
+
+    return {'W1': dLdW1, 'b1': dLdb1, 'W2': dLdW2, 'b2': dLdb2}
     # *** END CODE HERE ***
 
 
@@ -160,7 +208,20 @@ def gradient_descent_epoch(train_data, train_labels, learning_rate, batch_size, 
     """
 
     # *** START CODE HERE ***
-
+    # Split into mini batches
+    num_batches = int(np.ceil(len(train_data) / batch_size))
+    batches = list()
+    for i in range(num_batches):
+        batch_data = train_data[i*batch_size: (i+1)*batch_size]
+        batch_labels = train_labels[i*batch_size: (i+1)*batch_size]
+        batches.append((batch_data, batch_labels))
+    
+    # Train mini batches
+    for batch_data, batch_labels in batches:
+        grads = backward_prop_func(
+            batch_data, batch_labels, params, forward_prop_func)
+        for wt in ['W1', 'b1', 'W2', 'b2']:
+            params[wt] -= learning_rate * grads[wt]
     # *** END CODE HERE ***
 
     # This function does not return anything
@@ -250,7 +311,7 @@ def run_train_test(name, all_data, all_labels, backward_prop_func, num_epochs, p
 
 def main(plot=True):
     parser = argparse.ArgumentParser(description='Train a nn model.')
-    parser.add_argument('--num_epochs', type=int, default=30)
+    parser.add_argument('--num_epochs', type=int, default=5)
 
     args = parser.parse_args()
 
@@ -288,11 +349,13 @@ def main(plot=True):
     }
     
     baseline_acc = run_train_test('baseline', all_data, all_labels, backward_prop, args.num_epochs, plot)
-    reg_acc = run_train_test('regularized', all_data, all_labels, 
-        lambda a, b, c, d: backward_prop_regularized(a, b, c, d, reg=0.0001),
-        args.num_epochs, plot)
+    # reg_acc = run_train_test('regularized', all_data, all_labels, 
+    #     lambda a, b, c, d: backward_prop_regularized(a, b, c, d, reg=0.0001),
+    #     args.num_epochs, plot)
         
-    return baseline_acc, reg_acc
+    # return baseline_acc, reg_acc
+    return baseline_acc
+
 
 if __name__ == '__main__':
     main()
