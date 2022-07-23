@@ -21,14 +21,10 @@ def softmax(x):
         A 2d numpy float array containing the softmax results of shape batch_size x number_of_classes
     """
     # *** START CODE HERE ***
-    # exp = np.exp(x - np.max(x))
-    # return exp / np.sum(exp)
-
     x_max = np.max(x, axis=1, keepdims=True)
     x_exp = np.exp(x - x_max)
     sum_x_exp = np.sum(x_exp, axis=1, keepdims=True)
     return x_exp / sum_x_exp
-
     # *** END CODE HERE ***
 
 def sigmoid(x):
@@ -42,8 +38,7 @@ def sigmoid(x):
         A numpy float array containing the sigmoid results
     """
     # *** START CODE HERE ***
-    sig = 1 / (1 + np.exp(-x))
-    return sig
+    return 1 / (1 + np.exp(-x))
     # *** END CODE HERE ***
 
 def get_initial_params(input_size, num_hidden, num_output):
@@ -78,7 +73,6 @@ def get_initial_params(input_size, num_hidden, num_output):
     b2 = np.zeros(num_output)
 
     return {'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
-
     # *** END CODE HERE ***
 
 def forward_prop(data, labels, params):
@@ -105,10 +99,10 @@ def forward_prop(data, labels, params):
     W2 = params['W2']
     b2 = params['b2']
 
-    Z1 = data @ W1  + b1
+    Z1 = data @ W1  + b1 # 1000 x 300
     A1 = sigmoid(Z1) # 1000 x 300
 
-    Z2 = A1 @ W2 + b2
+    Z2 = A1 @ W2 + b2 # 1000 x 10
     y_pred = softmax(Z2) # 1000 x 10
 
     num_samples = len(data)
@@ -147,17 +141,15 @@ def backward_prop(data, labels, params, forward_prop_func):
     # Backward
     dLdZ2 = y_pred - labels # From PS2 2022, Q5a.
 
-    dZ2dW2 = A1
-    dLdW2 = dZ2dW2.T @ dLdZ2 / num_samples 
-    dLdb2 = np.sum(dLdZ2, axis=0) / num_samples # sums the columns
+    dZ2dW2 = A1 # 1000 x 300
+    dLdW2 = dZ2dW2.T @ dLdZ2 / num_samples # 300 x 10
+    dLdb2 = np.sum(dLdZ2, axis=0) / num_samples # 10 x 1 by summing the columns
 
-    dZ2dA1 = params['W2']
-    dLdA1 = dLdZ2 @ dZ2dA1.T # 1000x300
+    dZ2dA1 = params['W2'] # 300 x 10
     dA1dZ1 = A1 * (1 - A1) # Gradient of sigmoid
-    dLdZ1 = dLdA1 @ dA1dZ1.T # 1000x1000
-    dZ1dW1 = data
-    dLdW1 = data.T @ (dLdZ2 @ dZ2dA1.T * dA1dZ1)  / num_samples
-    dLdb1 = np.sum((dLdZ2 @ dZ2dA1.T)* dA1dZ1, axis=0) / num_samples
+    dZ1dW1 = data # 1000 x 28^2
+    dLdW1 = dZ1dW1.T @ (dLdZ2 @ dZ2dA1.T * dA1dZ1)  / num_samples # 28^2 x 300
+    dLdb1 = np.sum((dLdZ2 @ dZ2dA1.T)* dA1dZ1, axis=0) / num_samples # 300 x 1 by summing the columns
 
     return {'W1': dLdW1, 'b1': dLdb1, 'W2': dLdW2, 'b2': dLdb2}
     # *** END CODE HERE ***
@@ -185,7 +177,12 @@ def backward_prop_regularized(data, labels, params, forward_prop_func, reg):
             W1, W2, b1, and b2
     """
     # *** START CODE HERE ***
-
+    # Since the regularisation term is 'outside' the cross entropy loss there are no
+    # modifications to the partial derivative terms until dLdW1 and dLdW2
+    gradients = backward_prop(data, labels, params, forward_prop_func)
+    gradients['W1'] += 2 * reg * params['W1'] # Tack onto dLdW1 
+    gradients['W2'] += 2 * reg * params['W2'] # Tack onto dLdW2
+    return gradients
     # *** END CODE HERE ***
 
 def gradient_descent_epoch(train_data, train_labels, learning_rate, batch_size, params, forward_prop_func, backward_prop_func):
@@ -208,20 +205,22 @@ def gradient_descent_epoch(train_data, train_labels, learning_rate, batch_size, 
     """
 
     # *** START CODE HERE ***
-    # Split into mini batches
+    # Make mini batches
     num_batches = int(np.ceil(len(train_data) / batch_size))
-    batches = list()
+    all_batches = []
     for i in range(num_batches):
-        batch_data = train_data[i*batch_size: (i+1)*batch_size]
-        batch_labels = train_labels[i*batch_size: (i+1)*batch_size]
-        batches.append((batch_data, batch_labels))
+        idx_start = i*batch_size
+        idx_end = (i+1)*batch_size
+        X_train_batch = train_data[idx_start: idx_end]
+        y_train_batch = train_labels[idx_start: idx_end]
+        batch = (X_train_batch, y_train_batch)
+        all_batches.append(batch)
     
     # Train mini batches
-    for batch_data, batch_labels in batches:
-        grads = backward_prop_func(
-            batch_data, batch_labels, params, forward_prop_func)
-        for wt in ['W1', 'b1', 'W2', 'b2']:
-            params[wt] -= learning_rate * grads[wt]
+    for X_train_batch, y_train_batch in all_batches:
+        gradients = backward_prop_func(X_train_batch, y_train_batch, params, forward_prop_func)
+        for weight in ['W1', 'b1', 'W2', 'b2']:
+            params[weight] -= learning_rate * gradients[weight]
     # *** END CODE HERE ***
 
     # This function does not return anything
@@ -280,6 +279,9 @@ def run_train_test(name, all_data, all_labels, backward_prop_func, num_epochs, p
         get_initial_params, forward_prop, backward_prop_func,
         num_hidden=300, learning_rate=5, num_epochs=num_epochs, batch_size=1000
     )
+    # Added by Jason to save params
+    file_name = name + ".npy"
+    np.save(file_name, params)
 
     t = np.arange(num_epochs)
 
@@ -311,7 +313,7 @@ def run_train_test(name, all_data, all_labels, backward_prop_func, num_epochs, p
 
 def main(plot=True):
     parser = argparse.ArgumentParser(description='Train a nn model.')
-    parser.add_argument('--num_epochs', type=int, default=5)
+    parser.add_argument('--num_epochs', type=int, default=30)
 
     args = parser.parse_args()
 
@@ -349,13 +351,14 @@ def main(plot=True):
     }
     
     baseline_acc = run_train_test('baseline', all_data, all_labels, backward_prop, args.num_epochs, plot)
-    # reg_acc = run_train_test('regularized', all_data, all_labels, 
-    #     lambda a, b, c, d: backward_prop_regularized(a, b, c, d, reg=0.0001),
-    #     args.num_epochs, plot)
+    reg_acc = run_train_test('regularized', all_data, all_labels, 
+        lambda a, b, c, d: backward_prop_regularized(a, b, c, d, reg=0.0001),
+        args.num_epochs, plot)
         
-    # return baseline_acc, reg_acc
-    return baseline_acc
+    return baseline_acc, reg_acc
 
 
 if __name__ == '__main__':
+    # params_baseline = np.load('baseline.npy',allow_pickle='TRUE').item()
+    # params_regularized = np.load('baseline.npy', allow_pick='TRUE').item()
     main()
