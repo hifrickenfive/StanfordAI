@@ -71,10 +71,10 @@ def get_initial_params(input_size, num_hidden, num_output):
     Returns:
         A dict mapping parameter names to numpy arrays
     """
-    W1 = np.random.randn(num_hidden, input_size)
+    W1 = np.random.randn(input_size, num_hidden)
     b1 = np.zeros(num_hidden)
 
-    W2 = np.random.randn(num_output, num_hidden)
+    W2 = np.random.randn(num_hidden, num_output)
     b2 = np.zeros(num_output)
 
     return {'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
@@ -105,11 +105,11 @@ def forward_prop(data, labels, params):
     W2 = params['W2']
     b2 = params['b2']
 
-    Z1 = data @ W1.T + b1
-    A1 = sigmoid(Z1)
+    Z1 = data @ W1  + b1
+    A1 = sigmoid(Z1) # 1000 x 300
 
-    Z2 = A1 @ W2.T + b2
-    y_pred = softmax(Z2)
+    Z2 = A1 @ W2 + b2
+    y_pred = softmax(Z2) # 1000 x 10
 
     num_samples = len(data)
     sum_cross_entropy_loss = - np.sum(labels * np.log(y_pred)) # per batch
@@ -148,16 +148,16 @@ def backward_prop(data, labels, params, forward_prop_func):
     dLdZ2 = y_pred - labels # From PS2 2022, Q5a.
 
     dZ2dW2 = A1
-    dLdW2 = dLdZ2.T @ dZ2dW2 / num_samples 
+    dLdW2 = dZ2dW2.T @ dLdZ2 / num_samples 
     dLdb2 = np.sum(dLdZ2, axis=0) / num_samples # sums the columns
 
     dZ2dA1 = params['W2']
-    dLdA1 = dLdZ2 @ dZ2dA1
+    dLdA1 = dLdZ2 @ dZ2dA1.T # 1000x300
     dA1dZ1 = A1 * (1 - A1) # Gradient of sigmoid
-    dLdZ1 = dLdA1 * dA1dZ1  # Element-wise trick to get expected dimensions
+    dLdZ1 = dLdA1 @ dA1dZ1.T # 1000x1000
     dZ1dW1 = data
-    dLdW1 = dLdZ1.T @ dZ1dW1 / num_samples
-    dLdb1 = np.sum(dLdZ1, axis=0) / num_samples
+    dLdW1 = data.T @ (dLdZ2 @ dZ2dA1.T * dA1dZ1)  / num_samples
+    dLdb1 = np.sum((dLdZ2 @ dZ2dA1.T)* dA1dZ1, axis=0) / num_samples
 
     return {'W1': dLdW1, 'b1': dLdb1, 'W2': dLdW2, 'b2': dLdb2}
     # *** END CODE HERE ***
