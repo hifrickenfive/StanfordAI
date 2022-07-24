@@ -44,20 +44,19 @@ def create_dictionary(messages):
     """
 
     # *** START CODE HERE ***
-    counter = dict()
+    count_words_vs_messages = collections.Counter()
     word_dict = dict()
-    i = 0
 
     for message in messages:
         words = get_words(message)
-        for word in words:
-            if word not in counter:
-                counter[word] = 1
-            else:
-                counter[word] += 1
-                if counter[word] == 5:
-                    word_dict[word] = i
-                    i += 1
+        unique_words = set(words)
+        for word in unique_words:
+            count_words_vs_messages[word] += 1
+
+    vocab = [k for k, v in count_words_vs_messages.items() if v >= 5]
+    indices = list(range(0, len(vocab)))
+    word_dict = dict(zip(vocab, indices))
+          
     return word_dict
     # *** END CODE HERE ***
 
