@@ -2,11 +2,15 @@
 CS 229 Machine Learning
 Question: Reinforcement Learning - The Inverted Pendulum
 """
+
 from __future__ import division, print_function
+import os
 from env import CartPole, Physics
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import lfilter
+import imageio
+import shutil
 
 """
 Parts of the code (cart and pole dynamics, and the state
@@ -44,7 +48,7 @@ model.
 `TOLERANCE`: Controls the convergence criteria for each value iteration
 run. In value iteration, you can assume convergence when the maximum
 absolute change in the value function at any state in an iteration
-becomes lower than `TOLERANCE.
+becomes lower than `TOLERANCE`.
 
 You need to write code that chooses the best action according
 to your current value function, and the current model of the MDP. The
@@ -82,10 +86,12 @@ initial learning quickly, and start the display only after the
 performance is reasonable.
 """
 
+
 def initialize_mdp_data(num_states):
     """
     Return a variable that contains all the parameters/state you need for your MDP.
-    Feel free to use whatever data type is most convenient for you (custom classes, tuples, dicts, etc)
+    Feel free to use whatever data type is most convenient for you (custom classes, 
+    tuples, dicts, etc)
 
     Assume that no transitions or rewards have been observed.
     Initialize the value function array to small random values (0 to 0.10, say).
@@ -99,9 +105,10 @@ def initialize_mdp_data(num_states):
 
     Returns: The initial MDP parameters
     """
-    transition_counts = np.zeros((num_states, num_states, 2))
-    transition_probs = np.ones((num_states, num_states, 2)) / num_states
-    #Index zero is count of rewards being -1 , index 1 is count of total num state is reached
+    transition_counts = np.zeros((num_states, 2, num_states))
+    transition_probs = np.ones((num_states, 2, num_states)) / num_states
+    # Index zero is count of rewards being -1 , index 1 is count of the number 
+    # of times a state is reached
     reward_counts = np.zeros((num_states, 2)) 
     reward = np.zeros(num_states)
     value = np.random.rand(num_states) * 0.1
@@ -115,6 +122,7 @@ def initialize_mdp_data(num_states):
         'num_states': num_states,
     }
 
+
 def choose_action(state, mdp_data):
     """
     Choose the next action (0 or 1) that is optimal according to your current
@@ -127,20 +135,17 @@ def choose_action(state, mdp_data):
     Returns:
         0 or 1 that is optimal according to your current MDP
     """
-
-    # *** START CODE HERE ***
-    # print(state, mdp_data)
     transition_probs = mdp_data['transition_probs']
     value = mdp_data['value']
     
-    expectation = transition_probs[state].T @ value
+    expectation = transition_probs[state] @ value
     if expectation[0] > expectation[1]:
         return 0
     elif expectation[0] == expectation[1]:
         return np.random.choice([0, 1])
     else:
         return 1
-    # *** END CODE HERE ***
+
 
 def update_mdp_transition_counts_reward_counts(mdp_data, state, action, new_state, reward):
     """
@@ -149,7 +154,8 @@ def update_mdp_transition_counts_reward_counts(mdp_data, state, action, new_stat
 
     Record the number of times `state, action, new_state` occurs.
     Record the rewards for every `new_state` 
-    (since rewards are -1 or 0, you just need to record number of times reward -1 is seen in 'reward_counts' index new_state,0)
+    (since rewards are -1 or 0, you just need to record number of times reward -1 
+    is seen in 'reward_counts' index new_state,0)
     Record the number of time `new_state` was reached (in 'reward_counts' index new_state,1)
 
     Args:
@@ -162,16 +168,10 @@ def update_mdp_transition_counts_reward_counts(mdp_data, state, action, new_stat
     Returns:
         Nothing
     """
-
-    # *** START CODE HERE ***
-    mdp_data['transition_counts'][state][new_state, action] += int(1)
+    mdp_data['transition_counts'][state, action, new_state] += 1
     mdp_data['reward_counts'][new_state, 0] += (reward == -1)
     mdp_data['reward_counts'][new_state, 1] += 1
 
-    # *** END CODE HERE ***
-
-    # This function does not return anything
-    return
 
 def update_mdp_transition_probs_reward(mdp_data):
     """
@@ -187,27 +187,7 @@ def update_mdp_transition_probs_reward(mdp_data):
 
     Returns:
         Nothing
-
     """
-
-    # *** START CODE HERE ***
-    # num_states = mdp_data['num_states']
-    # reward_counts = mdp_data['reward_counts']
-
-    # for state in range(0, num_states):
-    #     counts_a0 = mdp_data['transition_counts'][state][:, 0]
-    #     counts_a1 = mdp_data['transition_counts'][state][:, 1] 
-    #     probs_a0 = mdp_data['transition_probs'][state][:,0]
-    #     probs_a1 = mdp_data['transition_probs'][state][:,1]
-    #     total_a0 = sum(counts_a0)
-    #     total_a1 = sum(counts_a1)
-
-    #     if total_a0 != 0: 
-    #         mdp_data['transition_probs'][state][:,0] = np.where(counts_a0 >0, counts_a0/total_a0, 1/num_states)
-
-    #     if total_a1 != 0: 
-    #         mdp_data['transition_probs'][state][:,1] = np.where(counts_a1 >0, counts_a1/total_a1, 1/num_states)
-
     transition_counts = mdp_data['transition_counts']
     reward_counts = mdp_data['reward_counts']
     num_states = mdp_data['num_states']
@@ -221,17 +201,9 @@ def update_mdp_transition_probs_reward(mdp_data):
     mdp_data['reward'] = np.nan_to_num(reward, copy=False, nan=0.)
 
 
-
-
-    # *** END CODE HERE ***
-
-    # This function does not return anything
-    return
-
 def update_mdp_value(mdp_data, tolerance, gamma):
     """
     Update the estimated values in your MDP.
-
 
     Perform value iteration using the new estimated model for the MDP.
     The convergence criterion should be based on `TOLERANCE` as described
@@ -246,28 +218,69 @@ def update_mdp_value(mdp_data, tolerance, gamma):
 
     Returns:
         True if the value iteration converged in one iteration
-
     """
-
-    # *** START CODE HERE ***
-    transition_probs = mdp_data['transition_probs'] # 163 x 163 x 2
+    transition_probs = mdp_data['transition_probs'] # 163, 2, 163
     value = mdp_data['value'] # 163
-    reward = mdp_data['reward'] 
+    reward = mdp_data['reward'] # 163
     it = 0
     
     while True:
-        new_value = reward + gamma * np.max(np.moveaxis(transition_probs, 1, 2) @ value, axis=1) # axis =0 is columns, axis 1= rows
+        # transition_probs @ value 163, 2
+        # np.max(transition_probs @ value, axis=1) 163,
+        new_value = reward + gamma * np.max(transition_probs @ value, axis=1)
         it += 1
         if np.all(np.abs(new_value - value) < tolerance):
             mdp_data['value'] = new_value
             break
         value = new_value
     return it == 1
-    # *** END CODE HERE ***
 
-def main(plot=True):
+
+def plot_trial(mdp_data):
+    """Plot a trial given a learned MDP and policy, return as a gif file."""
+    time = 0
+    cart_pole = CartPole(Physics())
+    state_tuple = (0., 0., 0., 0.)
+    state = cart_pole.get_state(state_tuple)
+    # cart_pole.plot_cart(state_tuple, time)
+
+    # plot the learning curve (time balanced vs. trial)
+    log_tstf = np.log(np.array(time_steps_to_failure))
+    plt.plot(np.arange(len(time_steps_to_failure)), log_tstf, 'k')
+    window = 30
+    w = np.array([1/window for _ in range(window)])
+    weights = lfilter(w, 1, log_tstf)
+    x = np.arange(window//2, len(log_tstf) - window//2)
+    plt.plot(x, weights[window:len(log_tstf)], 'r--')
+    plt.xlabel('Num failures')
+    plt.ylabel('Log of num steps to failure')
+    plt.savefig('./control.pdf')
+
+    os.mkdir('frames')  # contain frames
+    files = []
+    # simulate a trial
+    while True:
+        time += 1
+        action = choose_action(state, mdp_data)
+        state_tuple = cart_pole.simulate(action, state_tuple)
+        new_state = cart_pole.get_state(state_tuple)
+        cart_pole.plot_cart(state_tuple, time)
+        files.append(f'frame{time}.png')
+        if new_state == mdp_data['num_states'] - 1:
+            break
+        state = new_state
+    # create gif file
+    with imageio.get_writer('simulation.gif', mode='I') as writer:
+        for filename in files:
+            image = imageio.imread(f'frames/{filename}')
+            writer.append_data(image)
+    # remove redundancy
+    shutil.rmtree("frames")
+    
+
+def main(seed, plot_learning=True, plot_simulation=False):
     # Seed the randomness of the simulation so this outputs the same thing each time
-    np.random.seed(0)
+    np.random.seed(seed)
 
     # Simulation parameters
     pause_time = 0.0001
@@ -328,8 +341,8 @@ def main(plot=True):
 
         # Get the state number corresponding to new state vector
         new_state = cart_pole.get_state(state_tuple)
-        # if display_started == 1:
-        #     cart_pole.show_cart(state_tuple, pause_time)
+        if display_started == 1:
+            cart_pole.show_cart(state_tuple, time)
 
         # reward function to use - do not change this!
         if new_state == NUM_STATES - 1:
@@ -356,18 +369,16 @@ def main(plot=True):
         # when the pole fell and the state must be reinitialized.
         if new_state == NUM_STATES - 1:
             num_failures += 1
-            if num_failures >= max_failures:
+            if num_failures > max_failures:
                 break
             print('[INFO] Failure number {}'.format(num_failures))
             time_steps_to_failure.append(time - time_at_start_of_current_trial)
-            # time_steps_to_failure[num_failures] = time - time_at_start_of_current_trial
             time_at_start_of_current_trial = time
 
-            if time_steps_to_failure[num_failures - 1] > min_trial_length_to_start_display:
-                display_started = 1
+            # if time_steps_to_failure[num_failures - 1] > min_trial_length_to_start_display:
+            #     display_started = 1
 
             # Reinitialize state
-            # x = 0.0
             x = -1.1 + np.random.uniform() * 2.2
             x_dot, theta, theta_dot = 0.0, 0.0, 0.0
             state_tuple = (x, x_dot, theta, theta_dot)
@@ -375,7 +386,7 @@ def main(plot=True):
         else:
             state = new_state
 
-    if plot:
+    if plot_learning:
         # plot the learning curve (time balanced vs. trial)
         log_tstf = np.log(np.array(time_steps_to_failure))
         plt.plot(np.arange(len(time_steps_to_failure)), log_tstf, 'k')
@@ -386,9 +397,14 @@ def main(plot=True):
         plt.plot(x, weights[window:len(log_tstf)], 'r--')
         plt.xlabel('Num failures')
         plt.ylabel('Log of num steps to failure')
-        plt.savefig('./control.pdf')
+        plt.savefig(f'./learning{seed}.png')
+    
+    # if plot_simulation:
+    #     # Plot a trial (as a gif file) using learned policy
+    #     plot_trial(mdp_data)
 
     return np.array(time_steps_to_failure)
     
+
 if __name__ == '__main__':
-    main()
+    main(seed=0, plot_simulation=True)
