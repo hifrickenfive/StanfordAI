@@ -248,27 +248,29 @@ def update_mdp_value(mdp_data, tolerance, gamma):
     i = 0
     while True:
         expected_value = transition_probs.transpose(0,2,1) @ value # 163,2,163 x 163,1 = 163,2
-        new_value = reward + gamma * np.max(expected_value, axis=1) #163,1 + 163,1 = 163,1. Axis=1 is rows
+        updated_value = reward + gamma*np.max(expected_value, axis=1) #163,1 + 163,1 = 163,1. Axis=1 is rows
         i += 1
 
         # Check Break Condition
-        error = np.abs(new_value - value) 
+        error = np.abs(updated_value - value) 
         if np.all(error < tolerance):
-            mdp_data['value'] = new_value
+            mdp_data['value'] = updated_value
             break
 
-        value = new_value
+        value = updated_value
 
     if i == 1:
         return True
     else:
         return False
+        
 
     # *** END CODE HERE ***
 
-def main(plot=True):
+def main(plot=True, seed=0):
+ 
     # Seed the randomness of the simulation so this outputs the same thing each time
-    np.random.seed(0)
+    np.random.seed(seed)
 
     # Simulation parameters
     pause_time = 0.0001
@@ -387,9 +389,9 @@ def main(plot=True):
         plt.plot(x, weights[window:len(log_tstf)], 'r--')
         plt.xlabel('Num failures')
         plt.ylabel('Log of num steps to failure')
-        plt.savefig('./control.pdf')
+        plt.savefig('./control_seed' + str(seed) + '.pdf')
 
     return np.array(time_steps_to_failure)
     
 if __name__ == '__main__':
-    main()
+    main(True, 3)
