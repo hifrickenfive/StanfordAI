@@ -201,18 +201,21 @@ def update_mdp_transition_probs_reward(mdp_data):
     """
 
     # *** START CODE HERE ***
+    def protected_divide(a, b, val_instead_of_nan):
+        c = a / b
+        return np.nan_to_num(c, copy=False, nan = val_instead_of_nan)
+
     transition_counts = mdp_data['transition_counts']
-    reward_counts = mdp_data['reward_counts']
+    reward_counts, count_num_states_reached = mdp_data['reward_counts']
     num_states = mdp_data['num_states']
     
-    # update transition probablities
-    state_action_counts = np.sum(transition_counts, axis=1, keepdims=True) # 163x 163x 1
-    transition_probs = transition_counts / state_action_counts
-    mdp_data['transition_probs'] = np.nan_to_num(transition_probs, copy=False, nan=1/num_states)
-    
+    # update transition probabilities
+    state_action_counts = np.sum(transition_counts, axis=1, keepdims=True) # 163,163,1. Axis=1 is rows
+    mdp_data['transition_probs'] = protected_divide(transition_counts, state_action_counts, 1/num_states)
+
+
     # update rewards
-    reward = - reward_counts[:,0] / reward_counts[:,1]
-    mdp_data['reward'] = np.nan_to_num(reward, copy=False, nan=0.)
+    mdp_data['reward'] = protected_divide(- reward_counts[:,0] ,reward_counts[:,1], 0.0 )
     # *** END CODE HERE ***
 
     # This function does not return anything
@@ -245,29 +248,20 @@ def update_mdp_value(mdp_data, tolerance, gamma):
     reward = mdp_data['reward'] 
 
     i = 0
-    # while True:
-    #     Q = transition_probs.transpose(0,2,1) @ value
-    #     Q_opt = np.max(Q, axis=1) # axis 1 = rows
-    #     value_update = reward + gamma * Q_opt
-
-    #     if np.all(np.abs(value_update - value) < tolerance):
-    #         mdp_data['value'] = value_update
-    #         break
-
-    #     value = value_update
-    #     i += 1
-    # return i == 1
-
     while True:
-        new_value = reward + gamma * np.max(transition_probs.transpose(0,2,1) @ value, axis=1)
+        expected = transition_probs.transpose(0,2,1) @ value # 163,2,163 x 163,1 = 163,2
+        new_value = reward + gamma * np.max(expected, axis=1) #163,1 + 163,1 = 163,1. Axis=1 is rows
         i += 1
+
         if np.all(np.abs(new_value - value) < tolerance):
             mdp_data['value'] = new_value
             break
         value = new_value
-    return i == 1
 
-
+    if i == 1:
+        return True
+    else:
+        return False
 
     # *** END CODE HERE ***
 

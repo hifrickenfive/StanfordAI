@@ -219,15 +219,13 @@ def update_mdp_value(mdp_data, tolerance, gamma):
     Returns:
         True if the value iteration converged in one iteration
     """
-    transition_probs = mdp_data['transition_probs'] # 163, 2, 163
-    value = mdp_data['value'] # 163
-    reward = mdp_data['reward'] # 163
+    transition_probs = mdp_data['transition_probs']
+    value = mdp_data['value']
+    reward = mdp_data['reward']
     it = 0
     
     while True:
-        # transition_probs @ value 163, 2
-        # np.max(transition_probs @ value, axis=1) 163,
-        # new_value = reward + gamma * np.max(transition_probs @ value, axis=1)
+        new_value = reward + gamma * np.max(transition_probs @ value, axis=1)
         it += 1
         if np.all(np.abs(new_value - value) < tolerance):
             mdp_data['value'] = new_value
@@ -242,20 +240,7 @@ def plot_trial(mdp_data):
     cart_pole = CartPole(Physics())
     state_tuple = (0., 0., 0., 0.)
     state = cart_pole.get_state(state_tuple)
-    # cart_pole.plot_cart(state_tuple, time)
-
-    # plot the learning curve (time balanced vs. trial)
-    log_tstf = np.log(np.array(time_steps_to_failure))
-    plt.plot(np.arange(len(time_steps_to_failure)), log_tstf, 'k')
-    window = 30
-    w = np.array([1/window for _ in range(window)])
-    weights = lfilter(w, 1, log_tstf)
-    x = np.arange(window//2, len(log_tstf) - window//2)
-    plt.plot(x, weights[window:len(log_tstf)], 'r--')
-    plt.xlabel('Num failures')
-    plt.ylabel('Log of num steps to failure')
-    plt.savefig('./control.pdf')
-
+    cart_pole.plot_cart(state_tuple, time)
     os.mkdir('frames')  # contain frames
     files = []
     # simulate a trial
@@ -399,9 +384,9 @@ def main(seed, plot_learning=True, plot_simulation=False):
         plt.ylabel('Log of num steps to failure')
         plt.savefig(f'./learning{seed}.png')
     
-    # if plot_simulation:
-    #     # Plot a trial (as a gif file) using learned policy
-    #     plot_trial(mdp_data)
+    if plot_simulation:
+        # Plot a trial (as a gif file) using learned policy
+        plot_trial(mdp_data)
 
     return np.array(time_steps_to_failure)
     
