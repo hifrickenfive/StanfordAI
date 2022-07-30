@@ -130,25 +130,19 @@ def choose_action(state, mdp_data):
 
     # *** START CODE HERE ***
     transition_probs = mdp_data['transition_probs'] # 163,163,2
-    value = mdp_data['value'] # 163
-    
+    value = mdp_data['value'] # 163,1
+
+    # Evaluate the Expected Values
     expected_value = transition_probs[state].T @ value # 2,163 x 163,1 = 2x1
-    # push_left, push_right = expected_value
+    a0, a1 = expected_value
 
-    # if push_left > push_right:
-    #     return 0
-    # elif push_left == push_right:
-    #     return np.random.choice([0, 1])
-    # else:
-    #     return 1
-
-    if expected_value[0] > expected_value[1]:
+    # Choose Action
+    if a0 > a1:
         return 0
-    elif expected_value[0] == expected_value[1]:
+    elif a0 == a1:
         return np.random.choice([0, 1])
     else:
         return 1
-
 
     # *** END CODE HERE ***
 
@@ -174,10 +168,15 @@ def update_mdp_transition_counts_reward_counts(mdp_data, state, action, new_stat
     """
 
     # *** START CODE HERE ***
+    # Count Transitions
     mdp_data['transition_counts'][state, new_state, action] += 1
-    mdp_data['reward_counts'][new_state, 0] += (reward == -1)
+    
+    # Count New State Reached in Rewards
     mdp_data['reward_counts'][new_state, 1] += 1
 
+    # Count -1 Reward Events
+    if reward == -1:
+        mdp_data['reward_counts'][new_state, 0] += 1
     # *** END CODE HERE ***
 
     # This function does not return anything
@@ -203,19 +202,18 @@ def update_mdp_transition_probs_reward(mdp_data):
     # *** START CODE HERE ***
     def protected_divide(a, b, val_instead_of_nan):
         c = a / b
-        return np.nan_to_num(c, copy=False, nan = val_instead_of_nan)
+        return np.nan_to_num(c, copy=False, nan=val_instead_of_nan)
 
     transition_counts = mdp_data['transition_counts']
-    reward_counts, count_num_states_reached = mdp_data['reward_counts']
+    reward_counts = mdp_data['reward_counts']
     num_states = mdp_data['num_states']
     
-    # update transition probabilities
+    # Re-evaluate Transition Probabilities
     state_action_counts = np.sum(transition_counts, axis=1, keepdims=True) # 163,163,1. Axis=1 is rows
     mdp_data['transition_probs'] = protected_divide(transition_counts, state_action_counts, 1/num_states)
 
-
-    # update rewards
-    mdp_data['reward'] = protected_divide(- reward_counts[:,0] ,reward_counts[:,1], 0.0 )
+    # Re-evaluate Reward Probabilities
+    mdp_data['reward'] = protected_divide(-reward_counts[:,0], reward_counts[:,1], 0.0 ) # Negative required because 'cost'
     # *** END CODE HERE ***
 
     # This function does not return anything
@@ -244,18 +242,21 @@ def update_mdp_value(mdp_data, tolerance, gamma):
 
     # *** START CODE HERE ***
     transition_probs = mdp_data['transition_probs'] # 163 x 163 x 2
-    value = mdp_data['value'] # 163
-    reward = mdp_data['reward'] 
+    value = mdp_data['value'] # 163,1
+    reward = mdp_data['reward'] # 163,1
 
     i = 0
     while True:
-        expected = transition_probs.transpose(0,2,1) @ value # 163,2,163 x 163,1 = 163,2
-        new_value = reward + gamma * np.max(expected, axis=1) #163,1 + 163,1 = 163,1. Axis=1 is rows
+        expected_value = transition_probs.transpose(0,2,1) @ value # 163,2,163 x 163,1 = 163,2
+        new_value = reward + gamma * np.max(expected_value, axis=1) #163,1 + 163,1 = 163,1. Axis=1 is rows
         i += 1
 
-        if np.all(np.abs(new_value - value) < tolerance):
+        # Check Break Condition
+        error = np.abs(new_value - value) 
+        if np.all(error < tolerance):
             mdp_data['value'] = new_value
             break
+
         value = new_value
 
     if i == 1:
