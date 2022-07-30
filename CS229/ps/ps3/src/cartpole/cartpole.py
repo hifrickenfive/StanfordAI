@@ -133,14 +133,23 @@ def choose_action(state, mdp_data):
     value = mdp_data['value'] # 163
     
     expected_value = transition_probs[state].T @ value # 2,163 x 163,1 = 2x1
-    push_left, push_right = expected_value
+    # push_left, push_right = expected_value
 
-    if push_left > push_right:
+    # if push_left > push_right:
+    #     return 0
+    # elif push_left == push_right:
+    #     return np.random.choice([0, 1])
+    # else:
+    #     return 1
+
+    if expected_value[0] > expected_value[1]:
         return 0
-    elif push_left == push_right:
+    elif expected_value[0] == expected_value[1]:
         return np.random.choice([0, 1])
     else:
         return 1
+
+
     # *** END CODE HERE ***
 
 def update_mdp_transition_counts_reward_counts(mdp_data, state, action, new_state, reward):
@@ -236,18 +245,30 @@ def update_mdp_value(mdp_data, tolerance, gamma):
     reward = mdp_data['reward'] 
 
     i = 0
+    # while True:
+    #     Q = transition_probs.transpose(0,2,1) @ value
+    #     Q_opt = np.max(Q, axis=1) # axis 1 = rows
+    #     value_update = reward + gamma * Q_opt
+
+    #     if np.all(np.abs(value_update - value) < tolerance):
+    #         mdp_data['value'] = value_update
+    #         break
+
+    #     value = value_update
+    #     i += 1
+    # return i == 1
+
     while True:
-        Q = transition_probs.transpose(0,2,1) @ value
-        Q_opt = np.max(Q, axis=1) # axis 1 = rows
-        value_update = reward + gamma * Q_opt
-
-        if np.all(np.abs(value_update - value) < tolerance):
-            mdp_data['value'] = value_update
-            break
-
-        value = value_update
+        new_value = reward + gamma * np.max(transition_probs.transpose(0,2,1) @ value, axis=1)
         i += 1
+        if np.all(np.abs(new_value - value) < tolerance):
+            mdp_data['value'] = new_value
+            break
+        value = new_value
     return i == 1
+
+
+
     # *** END CODE HERE ***
 
 def main(plot=True):
