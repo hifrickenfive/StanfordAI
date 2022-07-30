@@ -129,14 +129,15 @@ def choose_action(state, mdp_data):
     """
 
     # *** START CODE HERE ***
-    # print(state, mdp_data)
-    transition_probs = mdp_data['transition_probs']
-    value = mdp_data['value']
+    transition_probs = mdp_data['transition_probs'] # 163,163,2
+    value = mdp_data['value'] # 163
     
-    expectation = transition_probs[state].T @ value
-    if expectation[0] > expectation[1]:
+    expected_value = transition_probs[state].T @ value # 2,163 x 163,1 = 2x1
+    push_left, push_right = expected_value
+
+    if push_left > push_right:
         return 0
-    elif expectation[0] == expectation[1]:
+    elif push_left == push_right:
         return np.random.choice([0, 1])
     else:
         return 1
@@ -164,7 +165,7 @@ def update_mdp_transition_counts_reward_counts(mdp_data, state, action, new_stat
     """
 
     # *** START CODE HERE ***
-    mdp_data['transition_counts'][state][new_state, action] += int(1)
+    mdp_data['transition_counts'][state, new_state, action] += 1
     mdp_data['reward_counts'][new_state, 0] += (reward == -1)
     mdp_data['reward_counts'][new_state, 1] += 1
 
@@ -191,38 +192,18 @@ def update_mdp_transition_probs_reward(mdp_data):
     """
 
     # *** START CODE HERE ***
-    # num_states = mdp_data['num_states']
-    # reward_counts = mdp_data['reward_counts']
-
-    # for state in range(0, num_states):
-    #     counts_a0 = mdp_data['transition_counts'][state][:, 0]
-    #     counts_a1 = mdp_data['transition_counts'][state][:, 1] 
-    #     probs_a0 = mdp_data['transition_probs'][state][:,0]
-    #     probs_a1 = mdp_data['transition_probs'][state][:,1]
-    #     total_a0 = sum(counts_a0)
-    #     total_a1 = sum(counts_a1)
-
-    #     if total_a0 != 0: 
-    #         mdp_data['transition_probs'][state][:,0] = np.where(counts_a0 >0, counts_a0/total_a0, 1/num_states)
-
-    #     if total_a1 != 0: 
-    #         mdp_data['transition_probs'][state][:,1] = np.where(counts_a1 >0, counts_a1/total_a1, 1/num_states)
-
     transition_counts = mdp_data['transition_counts']
     reward_counts = mdp_data['reward_counts']
     num_states = mdp_data['num_states']
+    
     # update transition probablities
-    state_action_counts = np.sum(transition_counts, axis=2, keepdims=True)
+    state_action_counts = np.sum(transition_counts, axis=1, keepdims=True) # 163x 163x 1
     transition_probs = transition_counts / state_action_counts
-    mdp_data['transition_probs'] = np.nan_to_num(transition_probs, copy=False, 
-                                                 nan=1 / num_states)
+    mdp_data['transition_probs'] = np.nan_to_num(transition_probs, copy=False, nan=1/num_states)
+    
     # update rewards
     reward = - reward_counts[:,0] / reward_counts[:,1]
     mdp_data['reward'] = np.nan_to_num(reward, copy=False, nan=0.)
-
-
-
-
     # *** END CODE HERE ***
 
     # This function does not return anything
@@ -253,16 +234,20 @@ def update_mdp_value(mdp_data, tolerance, gamma):
     transition_probs = mdp_data['transition_probs'] # 163 x 163 x 2
     value = mdp_data['value'] # 163
     reward = mdp_data['reward'] 
-    it = 0
-    
+
+    i = 0
     while True:
-        new_value = reward + gamma * np.max(np.moveaxis(transition_probs, 1, 2) @ value, axis=1) # axis =0 is columns, axis 1= rows
-        it += 1
-        if np.all(np.abs(new_value - value) < tolerance):
-            mdp_data['value'] = new_value
+        Q = transition_probs.transpose(0,2,1) @ value
+        Q_opt = np.max(Q, axis=1) # axis 1 = rows
+        value_update = reward + gamma * Q_opt
+
+        if np.all(np.abs(value_update - value) < tolerance):
+            mdp_data['value'] = value_update
             break
-        value = new_value
-    return it == 1
+
+        value = value_update
+        i += 1
+    return i == 1
     # *** END CODE HERE ***
 
 def main(plot=True):

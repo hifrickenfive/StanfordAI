@@ -227,7 +227,7 @@ def update_mdp_value(mdp_data, tolerance, gamma):
     while True:
         # transition_probs @ value 163, 2
         # np.max(transition_probs @ value, axis=1) 163,
-        new_value = reward + gamma * np.max(transition_probs @ value, axis=1)
+        # new_value = reward + gamma * np.max(transition_probs @ value, axis=1)
         it += 1
         if np.all(np.abs(new_value - value) < tolerance):
             mdp_data['value'] = new_value
