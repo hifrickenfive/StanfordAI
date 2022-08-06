@@ -4,7 +4,6 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import random
 
 
 def init_centroids(num_clusters, image):
@@ -24,12 +23,9 @@ def init_centroids(num_clusters, image):
     centroids_init : nparray
         Randomly initialized centroids
     """
-
-    # *** START YOUR CODE ***
-    # raise NotImplementedError('init_centroids function not implemented')
-
-    # *** END YOUR CODE ***
-
+    H, W, C = image.shape
+    nums = np.random.randint(H * W, size=num_clusters)
+    centroids_init = image.reshape(-1, C)[nums]
     return centroids_init
 
 
@@ -53,12 +49,37 @@ def update_centroids(centroids, image, max_iter=30, print_every=10):
     new_centroids : nparray
         Updated centroids
     """
-
-    # *** START YOUR CODE ***
-    # raise NotImplementedError('update_centroids function not implemented')
+    num_clusters = len(centroids)
+    H, W, C = image.shape
+    image = image.reshape(-1, C)
+    dist = np.empty([num_clusters, H * W])
+    converged = False
     
-    # *** END YOUR CODE ***
-
+    for it in range(max_iter):
+        # Do E-step
+        for j in range(num_clusters):
+            dist[j] = np.sum((image - centroids[j]) ** 2, axis=1)
+        clustering = np.argmin(dist, axis=0).reshape(-1, 1)
+        # Do M-step
+        new_centroids = np.empty([num_clusters, C])
+        for j in range(num_clusters):
+            cluster_j = (clustering == j)
+            new_centroids[j] = np.sum(cluster_j * image, axis=0) / np.sum(cluster_j)
+        # print loss
+        if (it + 1) % print_every == 0:
+            loss = (image - new_centroids[clustering.squeeze()]) ** 2
+            loss = np.sum(loss)
+            print(f'loss: {loss:.2f}')
+        # check convergence
+        if np.array_equal(centroids, new_centroids):
+            converged = True
+            break
+        centroids = new_centroids
+        
+    if converged:
+         print(f'Converged after {it + 1} iterations')
+    else:
+        print(f"Still didn't converged after {it + 1} iteration")
     return new_centroids
 
 
@@ -76,16 +97,18 @@ def update_image(image, centroids):
 
     Returns
     -------
-    image : nparray
+    new_image : nparray
         Updated image
     """
-
-    # *** START YOUR CODE ***
-    # raise NotImplementedError('update_image function not implemented')
-
-    # *** END YOUR CODE ***
-
-    return image
+    num_clusters = len(centroids)
+    H, W, C = image.shape
+    image = image.reshape(-1, C)
+    dist = np.empty([num_clusters, H * W])
+    for j in range(num_clusters):
+        dist[j] = np.sum((image - centroids[j]) ** 2, axis=1)
+    clustering = np.argmin(dist, axis=0)
+    new_image = centroids[clustering].reshape(H, W, C)
+    return new_image
 
 
 def main(args):
@@ -99,13 +122,12 @@ def main(args):
     figure_idx = 0
 
     # Load small image
-    image = np.copy(mpimg.imread(image_path_small))
+    image = np.copy(mpimg.imread(image_path_small)) / 255
     print('[INFO] Loaded small image with shape: {}'.format(np.shape(image)))
     plt.figure(figure_idx)
     figure_idx += 1
-    plt.imshow(image)
-    plt.title('Original small image')
     plt.axis('off')
+    plt.imshow(image)
     savepath = os.path.join('.', 'orig_small.png')
     plt.savefig(savepath, transparent=True, format='png', bbox_inches='tight')
 
@@ -120,14 +142,13 @@ def main(args):
     centroids = update_centroids(centroids_init, image, max_iter, print_every)
 
     # Load large image
-    image = np.copy(mpimg.imread(image_path_large))
+    image = np.copy(mpimg.imread(image_path_large)) / 255
     image.setflags(write=1)
     print('[INFO] Loaded large image with shape: {}'.format(np.shape(image)))
     plt.figure(figure_idx)
     figure_idx += 1
-    plt.imshow(image)
-    plt.title('Original large image')
     plt.axis('off')
+    plt.imshow(image)
     savepath = os.path.join('.', 'orig_large.png')
     plt.savefig(fname=savepath, transparent=True, format='png', bbox_inches='tight')
 
@@ -139,14 +160,12 @@ def main(args):
 
     plt.figure(figure_idx)
     figure_idx += 1
-    plt.imshow(image_clustered)
-    plt.title('Updated large image')
     plt.axis('off')
+    plt.imshow(image_clustered)
     savepath = os.path.join('.', 'updated_large.png')
     plt.savefig(fname=savepath, transparent=True, format='png', bbox_inches='tight')
 
     print('\nCOMPLETE')
-    plt.show()
 
 
 if __name__ == '__main__':

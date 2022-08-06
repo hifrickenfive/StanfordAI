@@ -15,19 +15,34 @@ def main(is_semi_supervised, trial_num):
 
     # Load dataset
     train_path = os.path.join('.', 'train.csv')
-    x_all, z_all = load_gmm_dataset(train_path)
+    x_all, z_all = load_gmm_dataset(train_path) # 1000 examples
 
     # Split into labeled and unlabeled examples
     labeled_idxs = (z_all != UNLABELED).squeeze()
-    x_tilde = x_all[labeled_idxs, :]   # Labeled examples
-    z_tilde = z_all[labeled_idxs, :]   # Corresponding labels
-    x = x_all[~labeled_idxs, :]        # Unlabeled examples
+    x_tilde = x_all[labeled_idxs, :]   # Labeled examples 40 
+    z_tilde = z_all[labeled_idxs, :]   # Corresponding labels 40
+    x = x_all[~labeled_idxs, :]        # Unlabeled examples 980
 
     # *** START CODE HERE ***
     # (1) Initialize mu and sigma by splitting the n_examples data points uniformly at random
     # into K groups, then calculating the sample mean and covariance for each group
 
+    # Process labelled data
+    randomised_idx = np.random.permutation(len(x_tilde))
+    x_tilde, z_tilde = x_tilde[randomised_idx], z_tilde[randomised_idx]
+    x_tilde1, xx_tilde, x_tilde3, x_tilde4 =  np.array_split(x_tilde, K) # 5 ea
+    z_tilde1, z_tilde2, z_tilde3, z_tilde4 =  np.array_split(z_tilde, K)
 
+    # Process unlabelled data
+    randomised_idx = np.random.permutation(len(x))
+    x = x[randomised_idx]
+    x1, x2, x3, x4 =  np.array_split(x, K) # 245 ea
+
+    data1 = np.concatenate([x_tilde1, x1])
+    mu1 = np.mean(data1, axis=0) # array([-0.35974042,  0.86211474])
+ 
+
+ 
     # (2) Initialize phi to place equal probability on each Gaussian
     # phi should be a numpy array of shape (K,)
 
