@@ -95,7 +95,7 @@ def run_em(x, w, phi, mu, sigma):
     # See below for explanation of the convergence criterion
     it = 0
     ll = prev_ll = None
-    
+
     n, d = x.shape
     log_prob = np.empty([n, K])
 
@@ -105,6 +105,7 @@ def run_em(x, w, phi, mu, sigma):
         # (1) E-step: Update your estimates in w
 
         # Initialise
+        prev_ll = ll
         n, d = x.shape # Num samples and num dimension of each sample
         _numerator = np.empty([n, K])
 
@@ -183,7 +184,6 @@ def run_em(x, w, phi, mu, sigma):
         # Check convergence
         # Stop when the absolute change in log-likelihood is < eps
         ll = - n * d / 2 * np.log(2 * np.pi) + np.sum(logsumexp(log_prob))
-        prev_ll = ll
 
         it += 1
         # *** END CODE HERE ***
