@@ -82,11 +82,11 @@ def run_em(x, phi, mu, sigma):
         print(w)
         # Check convergence
         # Stop when the absolute change in log-likelihood is < eps
-        ll = - n_examples * dim / 2 * np.log(2 * np.pi) + np.sum(logsumexp(log_prob))
-        if np.abs(ll - prev_ll) < eps:
-            print(f'Converged after {i + 1} iterations\nwith ll loss {ll:.2f}\n')
-            break
-        prev_ll = ll
+        # ll = - n_examples * dim / 2 * np.log(2 * np.pi) + np.sum(logsumexp(log_prob))
+        # if np.abs(ll - prev_ll) < eps:
+        #     print(f'Converged after {i + 1} iterations\nwith ll loss {ll:.2f}\n')
+        #     break
+        # prev_ll = ll
         
         # Do M-step
         phi = np.sum(w, axis=0) / n_examples
@@ -94,6 +94,12 @@ def run_em(x, phi, mu, sigma):
             mu[j] = w[:,j] @ x / np.sum(w[:,j])
             sigma[j] = w[:,j] * (x - mu[j]).T @ (x - mu[j]) / np.sum(w[:,j])
 
+
+        ll = - n_examples * dim / 2 * np.log(2 * np.pi) + np.sum(logsumexp(log_prob))
+        if np.abs(ll - prev_ll) < eps:
+            print(f'Converged after {i + 1} iterations\nwith ll loss {ll:.2f}\n')
+            break
+        prev_ll = ll
     return w
 
 
