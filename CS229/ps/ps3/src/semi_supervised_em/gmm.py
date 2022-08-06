@@ -34,10 +34,15 @@ def main(is_semi_supervised, trial_num):
     sigma = np.empty([K, dim, dim])
 
     for j in range(K):
-        xj = x_all[cluster==j]
-        nj = len(xj)
-        mu[j] = np.mean(xj, axis=0)
-        sigma[j] = np.matmul((xj - mu[j]).T , (xj - mu[j])) / nj
+        # xj = x_all[cluster==j]
+        # nj = len(xj)
+        # mu[j] = np.mean(xj, axis=0)
+        # sigma[j] = np.matmul((xj - mu[j]).T , (xj - mu[j])) / nj
+
+    # SOLUTION
+        x_j = x_all[cluster == j]
+        mu[j] = np.mean(x_j, axis=0)
+        sigma[j] = (x_j - mu[j]).T @ (x_j - mu[j]) / len(x_j)
 
     # (2) Initialize phi to place equal probability on each Gaussian
     # phi should be a numpy array of shape (K,)
@@ -46,6 +51,7 @@ def main(is_semi_supervised, trial_num):
     # (3) Initialize the w values to place equal probability on each Gaussian
     # w should be a numpy array of shape (m, K)
     w = np.ones([n, K]) / K
+
     # *** END CODE HERE ***
 
     if is_semi_supervised:
@@ -56,8 +62,10 @@ def main(is_semi_supervised, trial_num):
     # Plot your predictions
     z_pred = np.zeros(n)
     if w is not None:  # Just a placeholder for the starter code
-        for i in range(n):
-            z_pred[i] = np.argmax(w[i])
+        # for i in range(0,n-2):
+        #     z_pred[i] = np.argmax(w[i])
+        z_pred = np.argmax(w, axis=1)
+
 
     plot_gmm_preds(x, z_pred, is_semi_supervised, plot_id=trial_num)
 
@@ -87,6 +95,10 @@ def run_em(x, w, phi, mu, sigma):
     # See below for explanation of the convergence criterion
     it = 0
     ll = prev_ll = None
+    
+    n, d = x.shape
+    log_prob = np.empty([n, K])
+
     while it < max_iter and (prev_ll is None or np.abs(ll - prev_ll) >= eps):
         pass  # Just a placeholder for the starter code
         # *** START CODE HERE
@@ -96,61 +108,96 @@ def run_em(x, w, phi, mu, sigma):
         n, d = x.shape # Num samples and num dimension of each sample
         _numerator = np.empty([n, K])
 
+        # for j in range(K):
+        #     # The aim is to solve P(z=j|x; phi, mu, sigma), which is the posterior probabilty given fixed parameters for our distribution
+        #     # We apply Bayes rule to arrive at P(x|z=j)P(z=j) / sum_{l=1}^{K} (P(x|z=l)P(z=l)). See my handnotes in my ipad CS229 concepts
+        #     # The denominator normalises such that we arrive at the cluster allocation probability
+        #     # So for each sample, and each cluster:
+        #     #    numerator = multi-variate gaussian formula x phi (n samples x 1 dimension)
+        #     #    denominator = sum of all clusters (n samples x 1 dimension)
+        #     # This implies each sample will have K elements for each cluster probability
+        #     # The sum of the soft allocations of each sample point to all clusters must sum to 1 of course
+
+        #     # To aid calculation we take the log of numerator and denominator then unwind this by applying the exponent at the end
+        #     _numerator[:,j] = -d/2*np.log(2*np.pi) \
+        #                       -1/2*np.log(np.linalg.det(sigma[j])) \
+        #                       -1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+        #                       + np.log(phi[j])
+        #     # Note: The third element is (980x2): <matmul((980,2),(2,2)), 980x2>
+        #     #   But we sum the rows to reduce it to (980x1). I'm not 100% sure why that works.
+
+        #     _numerator_exp = np.exp(_numerator) # (980x4)
+        #     _denominator = np.sum(_numerator_exp, axis=1).reshape(-1,1) # (980x1)
+
+        # w = _numerator - np.log(_denominator)
+        # w = np.exp(w)
+
+        # SOLUTION
+        log_prob = np.empty([n, K])
         for j in range(K):
-            # The aim is to solve P(z=j|x; phi, mu, sigma), which is the posterior probabilty given fixed parameters for our distribution
-            # We apply Bayes rule to arrive at P(x|z=j)P(z=j) / sum_{l=1}^{K} (P(x|z=l)P(z=l)). See my handnotes in my ipad CS229 concepts
-            # The denominator normalises such that we arrive at the cluster allocation probability
-            # So for each sample, and each cluster:
-            #    numerator = multi-variate gaussian formula x phi (n samples x 1 dimension)
-            #    denominator = sum of all clusters (n samples x 1 dimension)
-            # This implies each sample will have K elements for each cluster probability
-            # The sum of the soft allocations of each sample point to all clusters must sum to 1 of course
-
-            # To aid calculation we take the log of numerator and denominator then unwind this by applying the exponent at the end
-            _numerator[:,j] = -d/2*np.log(2*np.pi) \
-                              -1/2*np.log(np.linalg.det(sigma[j])) \
-                              -1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
-                              + np.log(phi[j])
-            # Note: The third element is (980x2): <matmul((980,2),(2,2)), 980x2>
-            #   But we sum the rows to reduce it to (980x1). I'm not 100% sure why that works.
-
-            _numerator_exp = np.exp(_numerator) # (980x4)
-            _denominator = np.sum(_numerator_exp, axis=1).reshape(-1,1) # (980x1)
-
-        w = _numerator - np.log(_denominator)
-        w = np.exp(w)
+            exponents = (x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]) # 980x2
+            exponents1 = exponents.sum(axis=1) # sum rows. 980x1
+            log_prob[:,j] = - np.log(np.linalg.det(sigma[j])) / 2 - exponents1 / 2 + np.log(phi[j]) # 980x1
+            w = log_prob - logsumexp(log_prob).reshape(-1, 1)
+            w = np.exp(w)
 
         # (2) M-step: Update the model parameters phi, mu, and sigma
+        # phi = np.sum(w, axis=0) / n
+        # for j in range(K):
+        #     sum_wj = sum(w[:,j]) 
+        #     mu[j] = w[:,j] @ x / n
+        #     sigma[j] = w[:,j] * (x - mu[j]).T@(x-mu[j]) / sum_wj
+
+        # SOLUTION
         phi = np.sum(w, axis=0) / n
         for j in range(K):
-            sum_wj = sum(w[:,j]) 
-            mu[j] = sum_wj / n
-            sigma[j] = w[:,j] * (x - mu[j])@(x-mu[j]).T / sum_wj
+            mu[j] = w[:,j] @ x / np.sum(w[:,j])
+            sigma[j] = w[:,j] * (x - mu[j]).T @ (x - mu[j]) / np.sum(w[:,j])
 
 
+ 
         # (3) Compute the log-likelihood of the data to check for convergence.
         # By log-likelihood, we mean `ll = sum_x[log(sum_z[p(x|z) * p(z)])]`.
         # We define convergence by the first iteration where abs(ll - prev_ll) < eps.
         # Hint: For debugging, recall part (a). We showed that ll should be monotonically increasing.
 
-        _ll = np.zeros((n,K))
-        ll = 0
+        # Reevaluate p(x|z) for the updated parameters.  
+        # _temp = np.zeros((n,K))
+        # for j in range(K):
+        #     _temp[:,j] = 1 / ((2*np.pi)**(d/2)*np.linalg.det(sigma[j])) \
+        #                 * np.exp( \
+        #                         np.sum(-1/2*(x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+        #                     ) \
+        #                 * phi[j]
+        # __temp = np.sum(_temp, axis=1)
+        # __temp_log = np.log(__temp)
+        # ll = np.sum(__temp_log, axis=0)
+        # prev_ll = ll
 
-        # Reevaluate p(x|z) for the updated parameters 
-        for j in range(K):
-            _ll[:,j] = -d/2*np.log(2*np.pi) \
-                              -1/2*np.log(np.linalg.det(sigma[j])) \
-                              -1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
-                              + np.log(phi[j])
-        __ll = np.sum(_numerator, axis=0)
-        updated_ll = np.sum(__ll, axis=0)
+        # SOLUTION
+        exponents = (x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]) # 980x2
+        exponents1 = exponents.sum(axis=1) # sum rows. 980x1
+        log_prob[:,j] = - np.log(np.linalg.det(sigma[j])) / 2 - exponents1 / 2 + np.log(phi[j]) # 980x1
+        w = log_prob - logsumexp(log_prob).reshape(-1, 1)
+        w = np.exp(w)
+        # Check convergence
+        # Stop when the absolute change in log-likelihood is < eps
+        ll = - n * d / 2 * np.log(2 * np.pi) + np.sum(logsumexp(log_prob))
+        prev_ll = ll
 
-        if updated_ll - ll < eps:
-            print(f'Converged after {j + 1} iterations\nwith ll loss {ll:.2f}\n')
-            break
+        it += 1
         # *** END CODE HERE ***
 
+    print(f'Iterations: {it}, log loss: {ll}')
     return w
+
+def logsumexp(z):
+    """Compute the logsumexp function for each row of z."""
+    z_max = np.max(z, axis=1, keepdims=True)
+    exp_z = np.exp(z - z_max)
+    sum_exp_z = np.sum(exp_z, axis=1)
+    return z_max.squeeze() + np.log(sum_exp_z)
+
 
 
 def run_semi_supervised_em(x, x_tilde, z_tilde, w, phi, mu, sigma):
