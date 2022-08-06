@@ -27,30 +27,25 @@ def main(is_semi_supervised, trial_num):
     # (1) Initialize mu and sigma by splitting the n_examples data points uniformly at random
     # into K groups, then calculating the sample mean and covariance for each group
 
-    # Process labelled data
-    randomised_idx = np.random.permutation(len(x_tilde))
-    x_tilde, z_tilde = x_tilde[randomised_idx], z_tilde[randomised_idx]
-    x_tilde1, xx_tilde, x_tilde3, x_tilde4 =  np.array_split(x_tilde, K) # 5 ea
-    z_tilde1, z_tilde2, z_tilde3, z_tilde4 =  np.array_split(z_tilde, K)
+    # Initialise
+    n, dim = x_all.shape # 1000, 2
+    cluster = np.random.randint(K, size=n) # uniform split into K groups
+    mu = np.empty([K, dim])
+    sigma = np.empty([K, dim, dim])
 
-    # Process unlabelled data
-    randomised_idx = np.random.permutation(len(x))
-    x = x[randomised_idx]
-    x1, x2, x3, x4 =  np.array_split(x, K) # 245 ea
+    for j in range(K):
+        xj = x_all[cluster==j]
+        nj = len(xj)
+        mu[j] = np.mean(xj, axis=0)
+        sigma[j] = np.matmul((xj - mu[j]).T , (xj - mu[j])) / nj
 
-    data1 = np.concatenate([x_tilde1, x1])
-    mu1 = np.mean(data1, axis=0) # array([-0.35974042,  0.86211474])
- 
-
- 
     # (2) Initialize phi to place equal probability on each Gaussian
     # phi should be a numpy array of shape (K,)
-
+    phi = np.ones(K) / K
 
     # (3) Initialize the w values to place equal probability on each Gaussian
     # w should be a numpy array of shape (m, K)
-
-
+    w = np.ones([n, K]) / K
     # *** END CODE HERE ***
 
     if is_semi_supervised:
@@ -97,8 +92,40 @@ def run_em(x, w, phi, mu, sigma):
         # *** START CODE HERE
         # (1) E-step: Update your estimates in w
 
+        # Initialise
+        n, d = x.shape # Num samples and num dimension of each sample
+        _numerator = np.empty([n, K])
+
+        for j in range(K):
+            # The aim is to solve P(z=j|x; phi, mu, sigma), which is the posterior probabilty given fixed parameters for our distribution
+            # We apply Bayes rule to arrive at P(x|z=j)P(z=j) / sum_{l=1}^{K} (P(x|z=l)P(z=l)). See my handnotes in my ipad CS229 concepts
+            # The denominator normalises such that we arrive at the cluster allocation probability
+            # So for each sample, and each cluster:
+            #    numerator = multi-variate gaussian formula x phi (n samples x 1 dimension)
+            #    denominator = sum of all clusters (n samples x 1 dimension)
+            # This implies each sample will have K elements for each cluster probability
+            # The sum of the soft allocations of each sample point to all clusters must sum to 1 of course
+
+            # To aid calculation we take the log of numerator and denominator then unwind this by applying the exponent at the end
+            _numerator[:,j] = -d/2*np.log(2*np.pi) \
+                              -1/2*np.log(np.linalg.det(sigma[j])) \
+                              -1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+                              + np.log(phi[j])
+            # Note: The third element is (980x2): <matmul((980,2),(2,2)), 980x2>
+            #   But we sum the rows to reduce it to (980x1). I'm not 100% sure why that works.
+
+            _numerator_exp = np.exp(_numerator) # (980x4)
+            _denominator = np.sum(_numerator_exp, axis=1).reshape(-1,1) # (980x1)
+
+        w = _numerator - np.log(_denominator)
+        w = np.exp(w)
 
         # (2) M-step: Update the model parameters phi, mu, and sigma
+        phi = np.sum(w, axis=0) / n
+        for j in range(K):
+            sum_wj = sum(w[:,j]) 
+            mu[j] = sum_wj / n
+            sigma[j] = w[:,j] * (x - mu[j])@(x-mu[j]).T / sum_wj
 
 
         # (3) Compute the log-likelihood of the data to check for convergence.
@@ -106,7 +133,21 @@ def run_em(x, w, phi, mu, sigma):
         # We define convergence by the first iteration where abs(ll - prev_ll) < eps.
         # Hint: For debugging, recall part (a). We showed that ll should be monotonically increasing.
 
+        _ll = np.zeros((n,K))
+        ll = 0
 
+        # Reevaluate p(x|z) for the updated parameters 
+        for j in range(K):
+            _ll[:,j] = -d/2*np.log(2*np.pi) \
+                              -1/2*np.log(np.linalg.det(sigma[j])) \
+                              -1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+                              + np.log(phi[j])
+        __ll = np.sum(_numerator, axis=0)
+        updated_ll = np.sum(__ll, axis=0)
+
+        if updated_ll - ll < eps:
+            print(f'Converged after {j + 1} iterations\nwith ll loss {ll:.2f}\n')
+            break
         # *** END CODE HERE ***
 
     return w

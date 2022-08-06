@@ -26,7 +26,7 @@ def main(is_semi_supervised, trial_num):
     x = x_all[~labeled_idxs, :]        # Unlabeled examples
 
     # Initialize parameters phi, mu, sigma
-    n_examples, dim = x_all.shape
+    n_examples, dim = x_all.shape # 100, 2
     clustering = np.random.randint(K, size=n_examples)
     phi = np.ones(K) / K
     mu = np.empty([K, dim])
@@ -69,15 +69,17 @@ def run_em(x, phi, mu, sigma):
     ll = prev_ll = - np.inf
     log_prob = np.empty([n_examples, K])
 
+
+
     for i in range(max_iter):
         # Do E-step
         for j in range(K):
-            exponents = (x - mu[j]) @ LA.inv(sigma[j]) * (x - mu[j])
-            exponents = exponents.sum(axis=1)
-            log_prob[:,j] = - np.log(LA.det(sigma[j])) / 2 - exponents / 2 + np.log(phi[j])
+            exponents = (x - mu[j]) @ LA.inv(sigma[j]) * (x - mu[j]) # 980x2
+            exponents1 = exponents.sum(axis=1) # sum rows. 980x1
+            log_prob[:,j] = - np.log(LA.det(sigma[j])) / 2 - exponents1 / 2 + np.log(phi[j]) # 980x1
         w = log_prob - logsumexp(log_prob).reshape(-1, 1)
         w = np.exp(w)
-        
+        print(w)
         # Check convergence
         # Stop when the absolute change in log-likelihood is < eps
         ll = - n_examples * dim / 2 * np.log(2 * np.pi) + np.sum(logsumexp(log_prob))
