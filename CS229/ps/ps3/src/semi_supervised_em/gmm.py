@@ -185,22 +185,60 @@ def run_semi_supervised_em(x, x_tilde, z_tilde, w, phi, mu, sigma):
     # See below for explanation of the convergence criterion
     it = 0
     ll = prev_ll = None
+
+    # Initialise first time rather than in the while loop
+    n_unobserved = x.shape[0]           
+    n_tilde = x_tilde.shape[0]        
+
+    x = np.concatenate([x, x_tilde], axis=0)
+    n, d = x.shape
+    
+    # Weights for observed examples. Use this knowledge to patch E-Step
+    w_tilde = alpha * (z_tilde == np.arange(K))
+
     while it < max_iter and (prev_ll is None or np.abs(ll - prev_ll) >= eps):
         pass  # Just a placeholder for the starter code
         # *** START CODE HERE ***
         # (1) E-step: Update your estimates in w
+        prev_ll = ll
+        _numerator = np.empty([n, K])
+        for j in range(K):
+            _numerator[:,j] = - d/2*np.log(2*np.pi) \
+                              - 1/2*np.log(np.linalg.det(sigma[j])) \
+                              - 1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+                              + np.log(phi[j])
 
+        _numerator_exp = np.exp(_numerator) # (980x4)
+        _denominator = np.sum(_numerator_exp, axis=1).reshape(-1,1) # (980x1)
+        w = _numerator - np.log(_denominator)
+        w = np.exp(w)
+        w[-n_tilde:] = w_tilde # Override weights with the known labels from supervised set
 
         # (2) M-step: Update the model parameters phi, mu, and sigma
+        phi = np.sum(w, axis=0) / (n_unobserved + alpha * n_tilde)
+        for j in range(K):
+            sum_wj = np.sum(w[:,j]) 
+            mu[j] = w[:,j] @ x / sum_wj
+            sigma[j] = w[:,j] * (x - mu[j]).T @ (x-mu[j]) / sum_wj
 
 
         # (3) Compute the log-likelihood of the data to check for convergence.
         # Hint: Make sure to include alpha in your calculation of ll.
         # Hint: For debugging, recall part (a). We showed that ll should be monotonically increasing.
+        _temp = np.zeros((n,K))
+        for j in range(K):
+            _temp[:,j] = - d/2*np.log(2*np.pi) \
+                         - 1/2*np.log(np.linalg.det(sigma[j])) \
+                         - 1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+                         + np.log(phi[j])
+            _temp[:,j] = np.exp(_temp[:,j]) 
+        __temp = np.sum(_temp, axis=1)
+        __temp_log = np.log(__temp)
+        ll = np.sum(__temp_log, axis=0)
 
-
+        it += 1
         # *** END CODE HERE ***
-
+    print(f'Iterations: {it}, log loss: {ll}')
     return w
 
 
@@ -275,6 +313,6 @@ if __name__ == '__main__':
         # uncomment the following line.
         # You do not need to add any other lines in this code block.
 
-        # main(is_semi_supervised=True, trial_num=t)
+        main(is_semi_supervised=True, trial_num=t)
 
         # *** END CODE HERE ***
