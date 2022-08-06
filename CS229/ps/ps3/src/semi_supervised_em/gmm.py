@@ -28,21 +28,20 @@ def main(is_semi_supervised, trial_num):
     # into K groups, then calculating the sample mean and covariance for each group
 
     # Initialise
-    n, dim = x_all.shape # 1000, 2
+    if is_semi_supervised:
+        data = x_all
+    else:
+        data = x
+
+    n, dim = data.shape
     cluster = np.random.randint(K, size=n) # uniform split into K groups
     mu = np.empty([K, dim])
     sigma = np.empty([K, dim, dim])
-
     for j in range(K):
-        xj = x_all[cluster==j]
+        xj = data[cluster==j]
         nj = len(xj)
         mu[j] = np.mean(xj, axis=0)
         sigma[j] = np.matmul((xj - mu[j]).T , (xj - mu[j])) / nj
-
-    # SOLUTION
-        # x_j = x_all[cluster == j]
-        # mu[j] = np.mean(x_j, axis=0)
-        # sigma[j] = (x_j - mu[j]).T @ (x_j - mu[j]) / len(x_j)
 
     # (2) Initialize phi to place equal probability on each Gaussian
     # phi should be a numpy array of shape (K,)
@@ -62,10 +61,8 @@ def main(is_semi_supervised, trial_num):
     # Plot your predictions
     z_pred = np.zeros(n)
     if w is not None:  # Just a placeholder for the starter code
-        # for i in range(0,n-2):
-        #     z_pred[i] = np.argmax(w[i])
-        z_pred = np.argmax(w, axis=1)
-
+        for i in range(0,n):
+            z_pred[i] = np.argmax(w[i])
 
     plot_gmm_preds(x, z_pred, is_semi_supervised, plot_id=trial_num)
 
@@ -95,9 +92,6 @@ def run_em(x, w, phi, mu, sigma):
     # See below for explanation of the convergence criterion
     it = 0
     ll = prev_ll = None
-
-    # n, d = x.shape
-    # log_prob = np.empty([n, K])
 
     while it < max_iter and (prev_ll is None or np.abs(ll - prev_ll) >= eps):
         pass  # Just a placeholder for the starter code
@@ -131,36 +125,21 @@ def run_em(x, w, phi, mu, sigma):
             _denominator = np.sum(_numerator_exp, axis=1).reshape(-1,1) # (980x1)
 
         w = _numerator - np.log(_denominator)
-        w = np.exp(w) # OK
-
-        # SOLUTION
-        # log_prob = np.empty([n, K])
-        # for j in range(K):
-        #     exponents = (x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]) # 980x2
-        #     exponents1 = exponents.sum(axis=1) # sum rows. 980x1
-        #     log_prob[:,j] = - np.log(np.linalg.det(sigma[j])) / 2 - exponents1 / 2 + np.log(phi[j]) # 980x1
-        #     w = log_prob - logsumexp(log_prob).reshape(-1, 1)
-        #     w = np.exp(w)
+        w = np.exp(w)
 
         # (2) M-step: Update the model parameters phi, mu, and sigma
-        phi = np.sum(w, axis=0) / n # OK
+        phi = np.sum(w, axis=0) / n
         for j in range(K):
             sum_wj = np.sum(w[:,j]) 
-            mu[j] = w[:,j] @ x / sum_wj # OK
-            sigma[j] = w[:,j] * (x - mu[j]).T @ (x-mu[j]) / sum_wj # OK
-
-        # SOLUTION
-        # phi = np.sum(w, axis=0) / n
-        # for j in range(K):
-        #     mu[j] = w[:,j] @ x / np.sum(w[:,j])
-        #     sigma[j] = w[:,j] * (x - mu[j]).T @ (x - mu[j]) / np.sum(w[:,j])
+            mu[j] = w[:,j] @ x / sum_wj
+            sigma[j] = w[:,j] * (x - mu[j]).T @ (x-mu[j]) / sum_wj
 
         # (3) Compute the log-likelihood of the data to check for convergence.
         # By log-likelihood, we mean `ll = sum_x[log(sum_z[p(x|z) * p(z)])]`.
         # We define convergence by the first iteration where abs(ll - prev_ll) < eps.
         # Hint: For debugging, recall part (a). We showed that ll should be monotonically increasing.
 
-        # Reevaluate p(x|z) for the updated parameters.  
+        # Reevaluate p(x,z; mu, sigma, phi) for the updated parameters.  
         _temp = np.zeros((n,K))
         for j in range(K):
             _temp[:,j] = - d/2*np.log(2*np.pi) \
@@ -171,32 +150,12 @@ def run_em(x, w, phi, mu, sigma):
         __temp = np.sum(_temp, axis=1)
         __temp_log = np.log(__temp)
         ll = np.sum(__temp_log, axis=0)
-        # print(ll)
-
-        # SOLUTION
-        # exponents = (x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]) # 980x2
-        # exponents1 = exponents.sum(axis=1) # sum rows. 980x1
-        # log_prob[:,j] = - np.log(np.linalg.det(sigma[j])) / 2 - exponents1 / 2 + np.log(phi[j]) # 980x1
-        # w = log_prob - logsumexp(log_prob).reshape(-1, 1)
-        # w = np.exp(w)
-        # # Check convergence
-        # # Stop when the absolute change in log-likelihood is < eps
-        # ll = - n * d / 2 * np.log(2 * np.pi) + np.sum(logsumexp(log_prob))
 
         it += 1
         # *** END CODE HERE ***
 
     print(f'Iterations: {it}, log loss: {ll}')
     return w
-
-def logsumexp(z):
-    """Compute the logsumexp function for each row of z."""
-    z_max = np.max(z, axis=1, keepdims=True)
-    exp_z = np.exp(z - z_max)
-    sum_exp_z = np.sum(exp_z, axis=1)
-    return z_max.squeeze() + np.log(sum_exp_z)
-
-
 
 def run_semi_supervised_em(x, x_tilde, z_tilde, w, phi, mu, sigma):
     """Problem 3(e): Semi-Supervised EM Algorithm.
