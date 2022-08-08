@@ -32,11 +32,8 @@ def init_centroids(num_clusters, image):
     H, W, C = image.shape
     nums = np.random.randint(H * W, size=num_clusters)
     centroids_init = image.reshape(-1, C)[nums]
-    return centroids_init
 
     # *** END YOUR CODE ***
-    print('nothing')
-    centroids_init = 1
     return centroids_init
 
 
@@ -82,7 +79,8 @@ def update_centroids(centroids, image, max_iter=30, print_every=10):
         
         # Eval Loss
         loss = (image - new_centroids[assignments.squeeze()]) ** 2
-        print(f'Loss: {np.sum(loss)}')
+        print(loss)
+        # print(f'Loss: {np.sum(loss)}')
 
         # # Eval Convergence
         # if np.array_equal(centroids, new_centroids):
@@ -90,7 +88,7 @@ def update_centroids(centroids, image, max_iter=30, print_every=10):
         # else:
         #     centroids = new_centroids
 
-        # Eval Convergence
+        # # Eval Convergence
         if np.array_equal(centroids, new_centroids):
             converged = True
             break
@@ -103,7 +101,7 @@ def update_centroids(centroids, image, max_iter=30, print_every=10):
     return new_centroids
     # *** END YOUR CODE ***
 
-    return new_centroids
+    # return new_centroids
 
 
 def update_image(image, centroids):
@@ -126,18 +124,28 @@ def update_image(image, centroids):
 
     # *** START YOUR CODE ***
     # Unpack image
-    height, width, channels = image.shape
-    k = len(centroids)
-    dist = np.empty([k, height * width])
-    image = image.reshape(-1, channels)
+    # height, width, channels = image.shape
+    # k = len(centroids)
+    # dist = np.empty([k, height * width])
+    # image = image.reshape(-1, channels)
 
-    for j in range(k):
-        dist[j] = np.sum((image - centroids[j]) ** 2, axis=1)
+    # for j in range(k):
+    #     dist[j] = np.sum((image - centroids[j]) ** 2, axis=1)
     
-    assignments = np.argmin(dist, axis=0)
-    image = centroids[assignments].reshape(height, width, channels)
-    plt.imshow(image)
-    print('tada!')
+    # assignments = np.argmin(dist, axis=0)
+    # image = centroids[assignments].reshape(height, width, channels)
+    # plt.imshow(image)
+    # print('tada!')
+
+    num_clusters = len(centroids)
+    H, W, C = image.shape
+    image = image.reshape(-1, C)
+    dist = np.empty([num_clusters, H * W])
+    for j in range(num_clusters):
+        dist[j] = np.sum((image - centroids[j]) ** 2, axis=1)
+    clustering = np.argmin(dist, axis=0)
+    new_image = centroids[clustering].reshape(H, W, C)
+
     # *** END YOUR CODE ***
 
     return image
