@@ -8,7 +8,7 @@ import random
 import scipy.io as spio
 
 
-# small is 128x128x3
+# Small is 128x128x3
 
 def init_centroids(num_clusters, image):
     """
@@ -29,16 +29,16 @@ def init_centroids(num_clusters, image):
     """
 
     # *** START YOUR CODE ***
-    # raise NotImplementedError('init_centroids function not implemented')
-
-    # *** END YOUR CODE ***
+    # Flatten the image from 3d into 2d i.e. (128,128,3) into (16384, 3)
     H, W, C = image.shape
-    nums = np.random.randint(H * W, size=num_clusters) # 16 random integers from 0 to 128x128=16384
-    centroids_init = image.reshape(-1, C)[nums] # flatten into (128x128=16384, 3) and then pick of the 16 indices corresponding to nums to result in 16,3
+    image_flattened = image.reshape(-1, C)
+    centroid_idx = np.random.randint(H * W, size=num_clusters)
+    centroids_init = image_flattened[centroid_idx] 
+    # *** END YOUR CODE ***
     return centroids_init
 
 
-def update_centroids(centroids, image, max_iter=30, print_every=10):
+def update_centroids(centroids, image_flattened, max_iter=30, print_every=10):
     """
     Carry out k-means centroid update step `max_iter` times
 
@@ -60,42 +60,40 @@ def update_centroids(centroids, image, max_iter=30, print_every=10):
     """
 
     # *** START YOUR CODE ***
-    # raise NotImplementedError('update_centroids function not implemented')
-    num_clusters = len(centroids)
-    H, W, C = image.shape
-    image = image.reshape(-1, C)
-    dist = np.empty([num_clusters, H * W])
-    converged = False
+    k = len(centroids)
+    H, W, C = image_flattened.shape # Unpack
+    image_flattened = image_flattened.reshape(-1, C) # Flatten
+
+    distances = np.empty([k, H * W]) # Pre-allocate empties
     
-    for it in range(max_iter):
-        # Do E-step
-        for j in range(num_clusters):
-            dist[j] = np.sum((image - centroids[j]) ** 2, axis=1)
-        clustering = np.argmin(dist, axis=0).reshape(-1, 1)
-        # Do M-step
-        new_centroids = np.empty([num_clusters, C])
-        for j in range(num_clusters):
-            cluster_j = (clustering == j)
-            new_centroids[j] = np.sum(cluster_j * image, axis=0) / np.sum(cluster_j)
-        # print loss
-        if (it + 1) % print_every == 0:
-            loss = (image - new_centroids[clustering.squeeze()]) ** 2
-            loss = np.sum(loss)
-            print(f'loss: {loss:.2f}')
-        # check convergence
-        if np.array_equal(centroids, new_centroids):
-            converged = True
-            break
-        centroids = new_centroids
+    for i in range(max_iter):
         
-    if converged:
-            print(f'Converged after {it + 1} iterations')
-    else:
-        print(f"Still didn't converged after {it + 1} iteration")
-    return new_centroids
+        # Hard assignments
+        for j in range(k):
+            distances[j] = np.sum((image_flattened - centroids[j]) ** 2, axis=1)
+        assignments = np.argmin(distances, axis=0).reshape(-1, 1)
+        
+        # Re-evaluate centroids
+        new_centroids = np.empty([k, C])
+        for j in range(k):
+            assignments_idx = np.where(assignments == j)[0]
+            new_centroids[j] = np.sum(image_flattened[assignments_idx,:], axis=0) / len(assignments_idx)
+        
+        # Evaluate loss
+        loss = (image_flattened - new_centroids[assignments.squeeze()]) ** 2
+        print(np.sum(loss))
+
+        # Early stop 
+        if np.array_equal(centroids, new_centroids):
+            print(f'Done in {i} iterations')
+            return new_centroids
+
+        centroids = new_centroids
+
+    print(f'Did not converge')
     # *** END YOUR CODE ***
 
-    # return new_centroids
+    return new_centroids
 
 
 def update_image(image, centroids):
@@ -117,17 +115,15 @@ def update_image(image, centroids):
     """
 
     # *** START YOUR CODE ***
-    # raise NotImplementedError('update_image function not implemented')
     num_clusters = len(centroids)
     H, W, C = image.shape
     image = image.reshape(-1, C)
     dist = np.empty([num_clusters, H * W])
+
     for j in range(num_clusters):
         dist[j] = np.sum((image - centroids[j]) ** 2, axis=1)
-    clustering = np.argmin(dist, axis=0)
-    new_image = centroids[clustering].reshape(H, W, C)
-    return new_image
-
+    assignments = np.argmin(dist, axis=0)
+    image = centroids[assignments].reshape(H, W, C)
     # *** END YOUR CODE ***
 
     return image
@@ -138,15 +134,16 @@ def main(args):
     # Setup
     max_iter = args.max_iter
     print_every = args.print_every
-    image_path_small = args.small_path
+    # image_path_small = args.small_path
     image_path_large = args.large_path
     num_clusters = args.num_clusters
     figure_idx = 0
 
     # Load small image
     # image = np.copy(mpimg.imread(image_path_small))
-    mat = spio.loadmat('peppers_small.mat', squeeze_me = True)
+    mat = spio.loadmat('peppers_small.mat', squeeze_me = True) # Workaround.
     image = mat['peppers_small'] / 255
+
     print('[INFO] Loaded small image with shape: {}'.format(np.shape(image)))
     plt.figure(figure_idx)
     figure_idx += 1
