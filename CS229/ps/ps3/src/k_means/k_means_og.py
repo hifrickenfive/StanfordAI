@@ -7,9 +7,6 @@ import os
 import random
 import scipy.io as spio
 
-
-# Small is 128x128x3
-
 def init_centroids(num_clusters, image):
     """
     Initialize a `num_clusters` x image_shape[-1] nparray to RGB
@@ -38,7 +35,7 @@ def init_centroids(num_clusters, image):
     return centroids_init
 
 
-def update_centroids(centroids, image_flattened, max_iter=30, print_every=10):
+def update_centroids(centroids, image, max_iter=30, print_every=10):
     """
     Carry out k-means centroid update step `max_iter` times
 
@@ -61,10 +58,10 @@ def update_centroids(centroids, image_flattened, max_iter=30, print_every=10):
 
     # *** START YOUR CODE ***
     k = len(centroids)
-    H, W, C = image_flattened.shape # Unpack
-    image_flattened = image_flattened.reshape(-1, C) # Flatten
-
-    distances = np.empty([k, H * W]) # Pre-allocate empties
+    H, W, C = image.shape
+    image_flattened = image.reshape(-1, C)
+    
+    distances = np.zeros([k, H * W]) # Pre-allocate
     
     for i in range(max_iter):
         
@@ -117,16 +114,16 @@ def update_image(image, centroids):
     # *** START YOUR CODE ***
     num_clusters = len(centroids)
     H, W, C = image.shape
-    image = image.reshape(-1, C)
+    image_flattened = image.reshape(-1, C)
     dist = np.empty([num_clusters, H * W])
 
     for j in range(num_clusters):
-        dist[j] = np.sum((image - centroids[j]) ** 2, axis=1)
+        dist[j] = np.sum((image_flattened - centroids[j]) ** 2, axis=1)
     assignments = np.argmin(dist, axis=0)
-    image = centroids[assignments].reshape(H, W, C)
+    new_image = centroids[assignments].reshape(H, W, C)
     # *** END YOUR CODE ***
 
-    return image
+    return new_image
 
 
 def main(args):
