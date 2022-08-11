@@ -3,6 +3,7 @@ CS 229 Machine Learning
 Question: Reinforcement Learning - The Inverted Pendulum
 """
 from __future__ import division, print_function
+from time import time
 from env import CartPole, Physics
 import matplotlib.pyplot as plt
 import numpy as np
