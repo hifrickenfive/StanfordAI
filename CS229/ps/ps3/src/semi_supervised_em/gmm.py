@@ -15,26 +15,41 @@ def main(is_semi_supervised, trial_num):
 
     # Load dataset
     train_path = os.path.join('.', 'train.csv')
-    x_all, z_all = load_gmm_dataset(train_path)
+    x_all, z_all = load_gmm_dataset(train_path) # 1000 examples
 
     # Split into labeled and unlabeled examples
     labeled_idxs = (z_all != UNLABELED).squeeze()
-    x_tilde = x_all[labeled_idxs, :]   # Labeled examples
-    z_tilde = z_all[labeled_idxs, :]   # Corresponding labels
-    x = x_all[~labeled_idxs, :]        # Unlabeled examples
+    x_tilde = x_all[labeled_idxs, :]   # Labeled examples 40 
+    z_tilde = z_all[labeled_idxs, :]   # Corresponding labels 40
+    x = x_all[~labeled_idxs, :]        # Unlabeled examples 980
 
     # *** START CODE HERE ***
     # (1) Initialize mu and sigma by splitting the n_examples data points uniformly at random
     # into K groups, then calculating the sample mean and covariance for each group
 
+    # Initialise
+    if is_semi_supervised:
+        data = x_all
+    else:
+        data = x
+
+    n, dim = data.shape
+    cluster = np.random.randint(K, size=n) # uniform split into K groups
+    mu = np.empty([K, dim])
+    sigma = np.empty([K, dim, dim])
+    for j in range(K):
+        xj = data[cluster==j]
+        nj = len(xj)
+        mu[j] = np.mean(xj, axis=0)
+        sigma[j] = np.matmul((xj - mu[j]).T , (xj - mu[j])) / nj
 
     # (2) Initialize phi to place equal probability on each Gaussian
     # phi should be a numpy array of shape (K,)
-
+    phi = np.ones(K) / K
 
     # (3) Initialize the w values to place equal probability on each Gaussian
     # w should be a numpy array of shape (m, K)
-
+    w = np.ones([n, K]) / K
 
     # *** END CODE HERE ***
 
@@ -46,7 +61,7 @@ def main(is_semi_supervised, trial_num):
     # Plot your predictions
     z_pred = np.zeros(n)
     if w is not None:  # Just a placeholder for the starter code
-        for i in range(n):
+        for i in range(0,n):
             z_pred[i] = np.argmax(w[i])
 
     plot_gmm_preds(x, z_pred, is_semi_supervised, plot_id=trial_num)
@@ -77,25 +92,70 @@ def run_em(x, w, phi, mu, sigma):
     # See below for explanation of the convergence criterion
     it = 0
     ll = prev_ll = None
+
     while it < max_iter and (prev_ll is None or np.abs(ll - prev_ll) >= eps):
         pass  # Just a placeholder for the starter code
         # *** START CODE HERE
         # (1) E-step: Update your estimates in w
 
+        # Initialise
+        prev_ll = ll
+        n, d = x.shape # Num samples and num dimension of each sample
+        _numerator = np.empty([n, K])
+
+        for j in range(K):
+            # The aim is to solve P(z=j|x; phi, mu, sigma), which is the posterior probabilty given fixed parameters for our distribution
+            # We apply Bayes rule to arrive at P(x|z=j)P(z=j) / sum_{l=1}^{K} (P(x|z=l)P(z=l)). See my handnotes in my ipad CS229 concepts
+            # The denominator normalises such that we arrive at the cluster allocation probability
+            # So for each sample, and each cluster:
+            #    numerator = multi-variate gaussian formula x phi (n samples x 1 dimension)
+            #    denominator = sum of all clusters (n samples x 1 dimension)
+            # This implies each sample will have K elements for each cluster probability
+            # The sum of the soft allocations of each sample point to all clusters must sum to 1 of course
+
+            # To aid calculation we take the log of numerator and denominator then unwind this by applying the exponent at the end
+            _numerator[:,j] = - d/2*np.log(2*np.pi) \
+                              - 1/2*np.log(np.linalg.det(sigma[j])) \
+                              - 1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+                              + np.log(phi[j])
+            # Note: The third element is (980x2): <matmul((980,2),(2,2)), 980x2>
+            #   But we sum the rows to reduce it to (980x1). I'm not 100% sure why that works.
+
+            _numerator_exp = np.exp(_numerator) # (980x4)
+            _denominator = np.sum(_numerator_exp, axis=1).reshape(-1,1) # (980x1)
+
+        w = _numerator - np.log(_denominator)
+        w = np.exp(w)
 
         # (2) M-step: Update the model parameters phi, mu, and sigma
-
+        phi = np.sum(w, axis=0) / n
+        for j in range(K):
+            sum_wj = np.sum(w[:,j]) 
+            mu[j] = w[:,j] @ x / sum_wj
+            sigma[j] = w[:,j] * (x - mu[j]).T @ (x-mu[j]) / sum_wj
 
         # (3) Compute the log-likelihood of the data to check for convergence.
         # By log-likelihood, we mean `ll = sum_x[log(sum_z[p(x|z) * p(z)])]`.
         # We define convergence by the first iteration where abs(ll - prev_ll) < eps.
         # Hint: For debugging, recall part (a). We showed that ll should be monotonically increasing.
 
+        # Reevaluate p(x,z; mu, sigma, phi) for the updated parameters.  
+        _temp = np.zeros((n,K))
+        for j in range(K):
+            _temp[:,j] = - d/2*np.log(2*np.pi) \
+                         - 1/2*np.log(np.linalg.det(sigma[j])) \
+                         - 1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+                         + np.log(phi[j])
+            _temp[:,j] = np.exp(_temp[:,j]) 
+        __temp = np.sum(_temp, axis=1)
+        __temp_log = np.log(__temp)
+        ll = np.sum(__temp_log, axis=0)
 
+        it += 1
         # *** END CODE HERE ***
 
+    print(f'Iterations: {it}, log loss: {ll}')
     return w
-
 
 def run_semi_supervised_em(x, x_tilde, z_tilde, w, phi, mu, sigma):
     """Problem 3(e): Semi-Supervised EM Algorithm.
@@ -125,22 +185,60 @@ def run_semi_supervised_em(x, x_tilde, z_tilde, w, phi, mu, sigma):
     # See below for explanation of the convergence criterion
     it = 0
     ll = prev_ll = None
+
+    # Initialise first time rather than in the while loop
+    n_unobserved = x.shape[0]           
+    n_tilde = x_tilde.shape[0]        
+
+    x = np.concatenate([x, x_tilde], axis=0)
+    n, d = x.shape
+    
+    # Weights for observed examples. Use this knowledge to patch E-Step
+    w_tilde = alpha * (z_tilde == np.arange(K))
+
     while it < max_iter and (prev_ll is None or np.abs(ll - prev_ll) >= eps):
         pass  # Just a placeholder for the starter code
         # *** START CODE HERE ***
         # (1) E-step: Update your estimates in w
+        prev_ll = ll
+        _numerator = np.empty([n, K])
+        for j in range(K):
+            _numerator[:,j] = - d/2*np.log(2*np.pi) \
+                              - 1/2*np.log(np.linalg.det(sigma[j])) \
+                              - 1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+                              + np.log(phi[j])
 
+        _numerator_exp = np.exp(_numerator) # (980x4)
+        _denominator = np.sum(_numerator_exp, axis=1).reshape(-1,1) # (980x1)
+        w = _numerator - np.log(_denominator)
+        w = np.exp(w)
+        w[-n_tilde:] = w_tilde # Override weights with the known labels from supervised set
 
         # (2) M-step: Update the model parameters phi, mu, and sigma
+        phi = np.sum(w, axis=0) / (n_unobserved + alpha * n_tilde)
+        for j in range(K):
+            sum_wj = np.sum(w[:,j]) 
+            mu[j] = w[:,j] @ x / sum_wj
+            sigma[j] = w[:,j] * (x - mu[j]).T @ (x-mu[j]) / sum_wj
 
 
         # (3) Compute the log-likelihood of the data to check for convergence.
         # Hint: Make sure to include alpha in your calculation of ll.
         # Hint: For debugging, recall part (a). We showed that ll should be monotonically increasing.
+        _temp = np.zeros((n,K))
+        for j in range(K):
+            _temp[:,j] = - d/2*np.log(2*np.pi) \
+                         - 1/2*np.log(np.linalg.det(sigma[j])) \
+                         - 1/2*np.sum((x - mu[j]) @ np.linalg.inv(sigma[j]) * (x - mu[j]), axis=1) \
+                         + np.log(phi[j])
+            _temp[:,j] = np.exp(_temp[:,j]) 
+        __temp = np.sum(_temp, axis=1)
+        __temp_log = np.log(__temp)
+        ll = np.sum(__temp_log, axis=0)
 
-
+        it += 1
         # *** END CODE HERE ***
-
+    print(f'Iterations: {it}, log loss: {ll}')
     return w
 
 
@@ -215,6 +313,6 @@ if __name__ == '__main__':
         # uncomment the following line.
         # You do not need to add any other lines in this code block.
 
-        # main(is_semi_supervised=True, trial_num=t)
+        main(is_semi_supervised=True, trial_num=t)
 
         # *** END CODE HERE ***

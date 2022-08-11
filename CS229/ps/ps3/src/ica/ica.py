@@ -19,7 +19,7 @@ def update_W(W, x, learning_rate):
     """
 
     # *** START CODE HERE ***
-
+    updated_W = W + learning_rate * (LA.inv(W).T - np.sign(np.matmul(W, x[:, None]))*x)
     # *** END CODE HERE ***
 
     return updated_W
@@ -40,6 +40,7 @@ def unmix(X, W):
     S = np.zeros(X.shape)
 
     # *** START CODE HERE ***
+    S = np.matmul(X, W.T)
 
     # *** END CODE HERE ***
 

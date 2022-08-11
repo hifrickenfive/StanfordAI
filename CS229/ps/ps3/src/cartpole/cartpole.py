@@ -3,6 +3,7 @@ CS 229 Machine Learning
 Question: Reinforcement Learning - The Inverted Pendulum
 """
 from __future__ import division, print_function
+from time import time
 from env import CartPole, Physics
 import matplotlib.pyplot as plt
 import numpy as np
@@ -129,6 +130,20 @@ def choose_action(state, mdp_data):
     """
 
     # *** START CODE HERE ***
+    transition_probs = mdp_data['transition_probs'] # 163,163,2
+    value = mdp_data['value'] # 163,1
+
+    # Evaluate the Expected Values
+    expected_value = transition_probs[state].T @ value # 2,163 x 163,1 = 2x1
+    a0, a1 = expected_value
+
+    # Choose Action
+    if a0 > a1:
+        return 0
+    elif a0 == a1:
+        return np.random.choice([0, 1])
+    else:
+        return 1
 
     # *** END CODE HERE ***
 
@@ -154,7 +169,15 @@ def update_mdp_transition_counts_reward_counts(mdp_data, state, action, new_stat
     """
 
     # *** START CODE HERE ***
+    # Count Transitions
+    mdp_data['transition_counts'][state, new_state, action] += 1
+    
+    # Count New State Reached in Rewards
+    mdp_data['reward_counts'][new_state, 1] += 1
 
+    # Count -1 Reward Events
+    if reward == -1:
+        mdp_data['reward_counts'][new_state, 0] += 1
     # *** END CODE HERE ***
 
     # This function does not return anything
@@ -178,7 +201,20 @@ def update_mdp_transition_probs_reward(mdp_data):
     """
 
     # *** START CODE HERE ***
+    def protected_divide(a, b, val_instead_of_nan):
+        c = a / b
+        return np.nan_to_num(c, copy=False, nan=val_instead_of_nan)
 
+    transition_counts = mdp_data['transition_counts']
+    reward_counts = mdp_data['reward_counts']
+    num_states = mdp_data['num_states']
+    
+    # Re-evaluate Transition Probabilities
+    state_action_counts = np.sum(transition_counts, axis=1, keepdims=True) # 163,163,1. Axis=1 is rows
+    mdp_data['transition_probs'] = protected_divide(transition_counts, state_action_counts, 1/num_states)
+
+    # Re-evaluate Reward Probabilities
+    mdp_data['reward'] = protected_divide(-reward_counts[:,0], reward_counts[:,1], 0.0 ) # Negative required because 'cost'
     # *** END CODE HERE ***
 
     # This function does not return anything
@@ -206,12 +242,36 @@ def update_mdp_value(mdp_data, tolerance, gamma):
     """
 
     # *** START CODE HERE ***
+    transition_probs = mdp_data['transition_probs'] # 163 x 163 x 2
+    value = mdp_data['value'] # 163,1
+    reward = mdp_data['reward'] # 163,1
+
+    i = 0
+    while True:
+        expected_value = transition_probs.transpose(0,2,1) @ value # 163,2,163 x 163,1 = 163,2
+        updated_value = reward + gamma*np.max(expected_value, axis=1) #163,1 + 163,1 = 163,1. Axis=1 is rows
+        i += 1
+
+        # Check Break Condition
+        error = np.abs(updated_value - value) 
+        if np.all(error < tolerance):
+            mdp_data['value'] = updated_value
+            break
+
+        value = updated_value
+
+    if i == 1:
+        return True
+    else:
+        return False
+        
 
     # *** END CODE HERE ***
 
-def main(plot=True):
+def main(plot=True, seed=0):
+ 
     # Seed the randomness of the simulation so this outputs the same thing each time
-    np.random.seed(0)
+    np.random.seed(seed)
 
     # Simulation parameters
     pause_time = 0.0001
@@ -330,9 +390,9 @@ def main(plot=True):
         plt.plot(x, weights[window:len(log_tstf)], 'r--')
         plt.xlabel('Num failures')
         plt.ylabel('Log of num steps to failure')
-        plt.savefig('./control.pdf')
+        plt.savefig('./control_seed' + str(seed) + '.pdf')
 
     return np.array(time_steps_to_failure)
     
 if __name__ == '__main__':
-    main()
+    main(True, 3)
