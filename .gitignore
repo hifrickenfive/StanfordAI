@@ -2,6 +2,9 @@
 CS221/Solutions
 CS229/Solutions
 
+#Files
+glove.6B.100d.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
