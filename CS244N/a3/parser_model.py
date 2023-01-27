@@ -82,7 +82,7 @@ class ParserModel(nn.Module):
 
         b = torch.empty(1, self.hidden_size)
         self.embed_to_hidden_bias = nn.Parameter(b)
-        nn.init.xavier_uniform_(self.embed_to_hidden_bias)
+        nn.init.uniform_(self.embed_to_hidden_bias)
 
         self.dropout = nn.Dropout(p=0.5, inplace=False)
 
@@ -93,7 +93,7 @@ class ParserModel(nn.Module):
 
         b2 = torch.empty(1, self.n_classes)
         self.hidden_to_logits_bias = nn.Parameter(b2)
-        nn.init.xavier_uniform_(self.hidden_to_logits_bias)
+        nn.init.uniform_(self.hidden_to_logits_bias)
 
         ### END YOUR CODE
 
