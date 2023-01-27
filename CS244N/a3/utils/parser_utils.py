@@ -32,11 +32,11 @@ class Config(object):
     use_pos = True
     use_dep = True
     use_dep = use_dep and (not unlabeled)
-    data_path = './data'
+    data_path = 'C:\\data\\StanfordAI\\CS244N\\a3\\data\\'
     train_file = 'train.conll'
     dev_file = 'dev.conll'
     test_file = 'test.conll'
-    embedding_file = './data/en-cw.txt'
+    embedding_file = 'C:\\data\\StanfordAI\\CS244N\\a3\\data\\en-cw.txt'
 
 
 class Parser(object):

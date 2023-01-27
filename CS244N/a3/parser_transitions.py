@@ -117,7 +117,7 @@ def minibatch_parse(sentences, model, batch_size):
     ###             is being accessed by `partial_parses` and may cause your code to crash.
 
     partial_parses = [PartialParse(sentence) for sentence in sentences]
-    unfinished_parses = partial_parses
+    unfinished_parses = partial_parses.copy()
 
     while unfinished_parses:
         mb = unfinished_parses[0:batch_size]
@@ -127,9 +127,7 @@ def minibatch_parse(sentences, model, batch_size):
             pp_object.parse_step(mb_predicted_actions[idx])
             if len(pp_object.buffer) == 0 and len(pp_object.stack) ==1:
                 unfinished_parses.remove(pp_object)
-                dependencies.append(pp_object.dependencies)
-
-    ### END YOUR CODE
+    dependencies = [parse_obj.dependencies for parse_obj in partial_parses] 
 
     return dependencies
 
