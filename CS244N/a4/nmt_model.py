@@ -342,7 +342,13 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.unsqueeze
         ###     Tensor Squeeze:
         ###         https://pytorch.org/docs/stable/torch.html#torch.squeeze
+        dec_state = self.decoder(Ybar_t, dec_state)
+        dec_hidden, dec_cell = dec_state
 
+        batch_size, target_length, hidden_size = enc_hiddens_proj.shape #(b,tgt_len, h)
+        dec_hidden = dec_hidden.reshape(batch_size, hidden_size, 1) #(b,h,1)
+        e_t = torch.bmm(enc_hiddens_proj, dec_hidden) # (b, tgt_len, 1)
+        e_t = e_t.squeeze(dim=2)
 
         ### END YOUR CODE
 
