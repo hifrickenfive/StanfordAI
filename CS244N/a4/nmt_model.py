@@ -186,8 +186,29 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/generated/torch.permute.html
         ###     Tensor Reshape (a possible alternative to permute):
         ###         https://pytorch.org/docs/stable/generated/torch.Tensor.reshape.html
+        
+        b = len(source_lengths) # batch size
+        m = max(source_lengths) # sentence length
+        e = self.model_embeddings.embed_size # embedding size
 
+        X = self.model_embeddings.source.weight[source_padded] # words are already converted to indices in the vocab
+        X = X.permute(1, 2, 0)
+        X = self.post_embed_cnn(X)
+        X = X.permute(2, 0, 1)
 
+        X_packed = pack_padded_sequence(X, source_lengths, enforce_sorted=True)
+        enc_hiddens_packed, (last_hidden, last_cell) = self.encoder(X_packed) # outputs hiddens @ all timesteps, and the final hidden + cells
+        enc_hiddens, _ = pad_packed_sequence(enc_hiddens_packed, batch_first=True) # (b,m,2h)
+
+        # The first dimension corresponds to forwards
+        forward_hidden = last_hidden[0,:,:]
+        backward_hidden = last_hidden[1,:,:]
+        forward_cell = last_cell[0,:,:]
+        backward_cell = last_cell[1,:,:]
+
+        h_0_dec = self.h_projection(torch.cat((backward_hidden, forward_hidden), dim=1))
+        c_0_dec = self.c_projection(torch.cat((backward_cell, forward_cell), dim=1))
+        dec_init_state = (h_0_dec, c_0_dec)
         ### END YOUR CODE
 
         return enc_hiddens, dec_init_state
