@@ -84,7 +84,7 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html
         self.post_embed_cnn = nn.Conv1d(in_channels=embed_size, out_channels=embed_size, kernel_size=2, padding='same')
         self.encoder = nn.LSTM(input_size=embed_size, hidden_size=hidden_size, bidirectional=True, bias=True)
-        self.decoder = nn.LSTMCell(input_size=embed_size+hidden_size, hidden_size=hidden_size, bias=False)
+        self.decoder = nn.LSTMCell(input_size=embed_size+hidden_size, hidden_size=hidden_size, bias=True)
         self.h_projection = nn.Linear(in_features=2*hidden_size, out_features=hidden_size, bias=False)
         self.c_projection = nn.Linear(in_features=2*hidden_size, out_features=hidden_size, bias=False)
         self.att_projection = nn.Linear(in_features=2*hidden_size, out_features=hidden_size, bias=False)
