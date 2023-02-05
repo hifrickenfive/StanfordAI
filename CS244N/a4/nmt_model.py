@@ -342,6 +342,7 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.unsqueeze
         ###     Tensor Squeeze:
         ###         https://pytorch.org/docs/stable/torch.html#torch.squeeze
+        
         dec_state = self.decoder(Ybar_t, dec_state)
         dec_hidden, dec_cell = dec_state
 
@@ -349,6 +350,7 @@ class NMT(nn.Module):
         dec_hidden = dec_hidden.reshape(batch_size, hidden_size, 1) #(b,h,1)
         e_t = torch.bmm(enc_hiddens_proj, dec_hidden) # (b, tgt_len, 1)
         e_t = e_t.squeeze(dim=2)
+
 
         ### END YOUR CODE
 
@@ -384,10 +386,18 @@ class NMT(nn.Module):
         ###     Tanh:
         ###         https://pytorch.org/docs/stable/torch.html#torch.tanh
 
+        alpha_t = F.softmax(e_t, 1)
+        a_t = alpha_t.unsqueeze(1).bmm(enc_hiddens).squeeze(1)
+        U_t = torch.cat((a_t, dec_hidden.squeeze(2)), dim=1)
+        U_t = torch.cat((dec_hidden.squeeze(2), a_t), dim=1)
+        V_t = self.combined_output_projection(U_t)
+        O_t = self.dropout(torch.tanh(V_t))
+        # P_t = nn.functional.softmax(self.target_vocab_projection(O_t))
+
 
         ### END YOUR CODE
 
-        combined_output = O_t
+        combined_output = O_t 
         return dec_state, combined_output, e_t
 
     def generate_sent_masks(self, enc_hiddens: torch.Tensor, source_lengths: List[int]) -> torch.Tensor:
