@@ -186,7 +186,7 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/generated/torch.permute.html
         ###     Tensor Reshape (a possible alternative to permute):
         ###         https://pytorch.org/docs/stable/generated/torch.Tensor.reshape.html
-        
+
         b = len(source_lengths) # batch size
         m = max(source_lengths) # sentence length
         e = self.model_embeddings.embed_size # embedding size
@@ -206,8 +206,9 @@ class NMT(nn.Module):
         forward_cell = last_cell[0,:,:]
         backward_cell = last_cell[1,:,:]
 
-        h_0_dec = self.h_projection(torch.cat((backward_hidden, forward_hidden), dim=1))
-        c_0_dec = self.c_projection(torch.cat((backward_cell, forward_cell), dim=1))
+        # Ed post 925 https://edstem.org/us/courses/33056/discussion/2528318. Please put forward tensor first.
+        h_0_dec = self.h_projection(torch.cat((forward_hidden, backward_hidden), dim=1)) 
+        c_0_dec = self.c_projection(torch.cat((forward_cell, backward_cell), dim=1))
         dec_init_state = (h_0_dec, c_0_dec)
         ### END YOUR CODE
 
@@ -287,6 +288,7 @@ class NMT(nn.Module):
             combined_outputs.append(o_t)
             o_prev = o_t
         combined_outputs = torch.stack(combined_outputs, dim=0)
+
         ### END YOUR CODE
 
         return combined_outputs
@@ -342,8 +344,6 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.unsqueeze
         ###     Tensor Squeeze:
         ###         https://pytorch.org/docs/stable/torch.html#torch.squeeze
-        
-        # JASON
         dec_state = self.decoder(Ybar_t, dec_state)
         dec_hidden, dec_cell = dec_state
         batch_size, target_length, hidden_size = enc_hiddens_proj.shape #(b,src_len, h)
@@ -384,16 +384,16 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.cat
         ###     Tanh:
         ###         https://pytorch.org/docs/stable/torch.html#torch.tanh
-
         alpha_t = F.softmax(e_t, 1)
         a_t = alpha_t.unsqueeze(1).bmm(enc_hiddens).squeeze(1)
         U_t = torch.cat((a_t, dec_hidden.squeeze(2)), dim=1)
         U_t = torch.cat((dec_hidden.squeeze(2), a_t), dim=1)
         V_t = self.combined_output_projection(U_t)
         O_t = self.dropout(torch.tanh(V_t))
+
         ### END YOUR CODE
 
-        combined_output = O_t 
+        combined_output = O_t
         return dec_state, combined_output, e_t
 
     def generate_sent_masks(self, enc_hiddens: torch.Tensor, source_lengths: List[int]) -> torch.Tensor:
