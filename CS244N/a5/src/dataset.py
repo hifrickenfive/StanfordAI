@@ -2,6 +2,7 @@ import random
 import torch
 from torch.utils.data import Dataset
 import argparse
+import numpy as np
 
 """
 The input-output pairs (x, y) of the NameDataset are of the following form:
@@ -167,8 +168,37 @@ class CharCorruptionDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        # TODO [part e]: see spec above
-        raise NotImplementedError
+        MIN_LEN = 4 # no less 4 char
+        MAX_LEN = int(self.block_size * 7/8) # no more than blockSize*7/8
+
+        # Step 1) Truncate
+        doc = self.data[idx]
+        docLength = len(doc)
+        truncatedLength = random.randint(MIN_LEN, min(docLength, MAX_LEN)) # corner case: short sentences
+        docTruncated = doc[:truncatedLength]
+        # print(docLength, truncatedLength)
+        # print(doc, docTruncated)
+
+        # Step 2) Further decompose truncated doc into 3 building block substrings
+        maskLength = random.randint(int(1/8 * truncatedLength), int(3/8 * truncatedLength)) # average length 1/4 truncatedLength
+        prefixLength = random.randint(1, truncatedLength-maskLength-1)
+        docPrefix = docTruncated[:prefixLength]
+        docMask = docTruncated[prefixLength:prefixLength + maskLength]
+        docSuffix = docTruncated[prefixLength + maskLength:]
+        # print(maskLength, prefixLength)
+        # print(docPrefix, docMask, docSuffix)
+
+        # Step 3) Create maskedString from the building blocks
+        maskedString = docPrefix + self.MASK_CHAR + docSuffix + self.MASK_CHAR + docMask + self.PAD_CHAR*(self.block_size - truncatedLength - 2)
+
+        # Step 4) Create input x and output y from maskedString
+        x = maskedString[:-1]
+        y = maskedString[1:]
+
+        # Step 5) Encode into torch long tensors
+        x = torch.LongTensor([self.stoi[c] for c in x])
+        y = torch.LongTensor([self.stoi[c] for c in y])
+        return x, y
 
 """
 Code under here is strictly for your debugging purposes; feel free to modify
@@ -181,9 +211,11 @@ if __name__ == '__main__':
             choices=["namedata", "charcorruption"])
     args = argp.parse_args()
 
+    wikiFullFilePath = "C:\\data\\StanfordAI\\CS244N\\a5\\src\\wiki.txt"
+
     if args.dataset_type == 'namedata':
         # Even if it hasn't been implemented, we use it to define the vocab
-        corruption_dataset = CharCorruptionDataset(open('wiki.txt', encoding='utf-8').read(), 128)
+        corruption_dataset = CharCorruptionDataset(open(wikiFullFilePath, encoding='utf-8').read(), 128)
         # Make the name dataset
         name_dataset = NameDataset(corruption_dataset,
             open('birth_places_train.tsv', encoding='utf-8').read())
@@ -193,11 +225,21 @@ if __name__ == '__main__':
             print('y:', ''.join([name_dataset.itos[int(c)] for c in y]))
         pass
     elif args.dataset_type == 'charcorruption':
-        corruption_dataset = CharCorruptionDataset(open('wiki.txt', encoding='utf-8').read(), 128)
-        for _, example in zip(range(4), corruption_dataset):
+        numExamples = 4
+
+        data = open(wikiFullFilePath, encoding='utf-8').read()
+        data = data.strip().split('\n')
+        samples = data[0:numExamples]
+
+        corruption_dataset = CharCorruptionDataset(open(wikiFullFilePath, encoding='utf-8').read(), 128)
+        i = 0
+        for _, example in zip(range(numExamples), corruption_dataset):
             x, y = example
+            print(f'Original: {samples[i]}')
             print('x:', ''.join([corruption_dataset.itos[int(c)] for c in x]))
             print('y:', ''.join([corruption_dataset.itos[int(c)] for c in y]))
+            print('\n')
+            i += 1
     else:
         raise ValueError("Unknown dataset type in command line args: {}"
                 .format(args.dataset_type))
