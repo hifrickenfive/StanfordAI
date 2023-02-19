@@ -68,7 +68,10 @@ if args.variant == 'vanilla':
     model = model.GPT(mconf)
 elif args.variant == 'perceiver':
     # set mconf.perceiver, and mconf.bottleneck_dim parameters appropriately.
-    pass # [part g] Make some other model here
+    mconf.bottleneck_dim = args.bottleneck_dim
+    mconf.perceiver = True
+    model = model.GPT(mconf)
+    # pass # [part g] Make some other model here
 else:
     raise ValueError("Unknown model variant")
 
