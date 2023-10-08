@@ -15,4 +15,9 @@ def classification(model, text):
         ##       and yours shouldn't be longer than 7 lines. You should look at the plots
         ##       you generated in Question 4 very carefully and make use of the log_likelihood() function.
         ##       There should be NO model training involved.
-        return False
+
+        if log_likelihood(model, text) < -420:
+            return True
+        else:
+            return False
+
