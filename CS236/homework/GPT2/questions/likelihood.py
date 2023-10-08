@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 def log_likelihood(model, text):
     """
     Compute the log-likelihoods for a string `text`
@@ -19,4 +20,16 @@ def log_likelihood(model, text):
         ##                     Pytorch negative log-likelihood: https://pytorch.org/docs/stable/generated/torch.nn.NLLLoss.html
         ##                     Pytorch Cross-Entropy Loss: https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
         ## Hint: Implementation should only takes 3~7 lines of code.
-        return 0
+
+        logits, __ = model(text, past=None)
+        probabilities = nn.functional.softmax(logits, dim=-1)
+        log_likelihood = 0
+
+        num_tokens = text.shape[1]
+        for i in range(num_tokens - 1):
+            next_token_ID = text[0, i + 1]  # what is the true next token?
+            probability_next_token = probabilities[0, i, next_token_ID]  # get probability of the true next token, given the logits for the current token
+            log_probability_next_token = torch.log(probability_next_token)
+            log_likelihood += log_probability_next_token
+
+        return log_likelihood

@@ -2,17 +2,23 @@ import torch
 import torch.nn.functional as F
 from tqdm import trange
 
+
 def top_k_logits(logits, k):
     if k == 0:
         return logits
     values, _ = torch.topk(logits, k)
     min_values = values[:, -1]
-    return torch.where(logits < min_values, torch.ones_like(logits, dtype=logits.dtype) * -1e10, logits)
+    return torch.where(
+        logits < min_values, torch.ones_like(logits, dtype=logits.dtype) * -1e10, logits
+    )
 
-def temperature_scale(logits, model, new_past, config, temperature, temperature_horizon):
+
+def temperature_scale(
+    logits, model, new_past, config, temperature, temperature_horizon
+):
     if temperature is None:
         return logits
-    
+
     if temperature_horizon == 1:
         ##TODO:
         ## Return logits scaled by the temperature parameter
@@ -20,7 +26,7 @@ def temperature_scale(logits, model, new_past, config, temperature, temperature_
     elif temperature_horizon == 2:
         ## Compute the logits for all length-2 generations, and scale them by the temperature parameter
         ## Return the logits for the first generated token (by marginalizing out the second token)
-        
+
         # joint_prob[i,j] will store the joint probability of the first generated token being first_tokens[i] and the second generated token being j
         first_tokens = []
         joint_probs = []
@@ -30,18 +36,18 @@ def temperature_scale(logits, model, new_past, config, temperature, temperature_
         first_probs = None
 
         for t in range(config.vocab_size):
-            if logits[0,t] <= -1e10:
+            if logits[0, t] <= -1e10:
                 # to speed up computation, ignore first tokens that were filtered out by top-k
                 continue
-            first_prob = first_probs[0,t]
-            first_tokens.append( t )
+            first_prob = first_probs[0, t]
+            first_tokens.append(t)
             new_current_text = torch.tensor([[t]])
 
             # TODO: compute the 1-D tensor joint_prob_t, where joint_prob_t[j] stores the joint probability of the first generated token being t and the second generated token being j
             # Don't forget to also do top-k filtering when computing probabilities for the second token
             joint_prob_t = None
 
-            joint_probs.append( joint_prob_t )
+            joint_probs.append(joint_prob_t)
 
         # convert to logits
         joint_probs = torch.cat(joint_probs, dim=0)
@@ -50,8 +56,9 @@ def temperature_scale(logits, model, new_past, config, temperature, temperature_
         # TODO: scale joint_logits by temperature, and compute first_logits by marginalizing out the second token dimension
         first_logits = None
 
-        return_logits[0,first_tokens] = first_logits
+        return_logits[0, first_tokens] = first_logits
         return return_logits
+
 
 def sample(model, start_text, config, length, temperature=None, temperature_horizon=1):
     current_text = start_text
@@ -69,7 +76,9 @@ def sample(model, start_text, config, length, temperature=None, temperature_hori
 
             current_logits = logits[:, -1, :]
             logits = top_k_logits(current_logits, k=config.top_k)
-            logits = temperature_scale(logits, model, new_past, config, temperature, temperature_horizon)
+            logits = temperature_scale(
+                logits, model, new_past, config, temperature, temperature_horizon
+            )
 
             ##TODO:
             ## 1) sample using the given `logits` tensor;
@@ -79,7 +88,12 @@ def sample(model, start_text, config, length, temperature=None, temperature_hori
             ##                   Pytorch multinomial sampling: https://pytorch.org/docs/stable/generated/torch.multinomial.html
             ## Hint: Implementation should only takes 3~5 lines of code.
             ##       The text generated should look like a technical paper.
+            probabilities = F.softmax(logits, dim=-1)
+            tokenID = torch.multinomial(probabilities, 1)  # equivalent to torch.argmax(probabilities) to get idx of highest prob value
+            # current_text = torch.cat((current_text, tokenID), dim=1)
 
+            current_text = tokenID
+            output.append(tokenID)
             past = new_past
 
         output = torch.cat(output, dim=1)
