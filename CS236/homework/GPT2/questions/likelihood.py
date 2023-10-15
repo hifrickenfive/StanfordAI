@@ -21,15 +21,23 @@ def log_likelihood(model, text):
         ##                     Pytorch Cross-Entropy Loss: https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
         ## Hint: Implementation should only takes 3~7 lines of code.
 
-        logits, __ = model(text, past=None)
-        probabilities = nn.functional.softmax(logits, dim=-1)
-        log_likelihood = 0
+        # Why are we doing this? We're measuring how good the model is at predicting a ground truth input string.
+        # Given a truth string, the model is trying to predict that same truth string in an autoregressive NLP manner.
+        # That's why the logits.shape is [num_tokens, vocab] and text.shape is [num_tokens]
 
-        num_tokens = text.shape[1]
-        for i in range(num_tokens - 1):
-            next_token_ID = text[0, i + 1]  # what is the true next token?
-            probability_next_token = probabilities[0, i, next_token_ID]  # get probability of the true next token, given the logits for the current token
-            log_probability_next_token = torch.log(probability_next_token)
-            log_likelihood += log_probability_next_token
+        # Get logits
+        logits, __ = model(text, past=None)
+
+        # Flatten the logits tensor from [1, text_length, vocab_size] to [text_length, vocab_size]
+        logits_flat = logits.view(-1, logits.size(-1))
+
+        # Flatten the input_text tensor from [1, text_length] to [text_length]
+        text_flat = text.view(-1)
+
+        # Cross_entropy performs softmax then negative log likelihood
+        # https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
+        loss = nn.functional.cross_entropy(logits_flat[1:, :], text_flat[1:], reduction='sum') # ignore first token in text and sum per Ed post Q6 Part 4 #134
+        negative_log_likelihood = loss.item() # use loss.item() to return a scalar
+        log_likelihood = - negative_log_likelihood
 
         return log_likelihood
