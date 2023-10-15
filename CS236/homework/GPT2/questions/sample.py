@@ -89,9 +89,12 @@ def sample(model, start_text, config, length, temperature=None, temperature_hori
             ## Hint: Implementation should only takes 3~5 lines of code.
             ##       The text generated should look like a technical paper.
             probabilities = F.softmax(logits, dim=-1)
-            tokenID = torch.multinomial(probabilities, 1)  # equivalent to torch.argmax(probabilities) to get idx of highest prob value
-            # current_text = torch.cat((current_text, tokenID), dim=1)
+            tokenID = torch.multinomial(probabilities, 1)
 
+            # We only sample input the next token given the previous hidden states
+            # At first I thought we should concat current_text to start_text
+            # But past is the hidden state matrix that represents the original string + new tokens i.e. t=0...t-1
+            # This saves recomputing the hidden states
             current_text = tokenID
             output.append(tokenID)
             past = new_past
