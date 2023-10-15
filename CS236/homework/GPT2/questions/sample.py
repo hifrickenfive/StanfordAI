@@ -32,8 +32,8 @@ def temperature_scale(
         joint_probs = []
         return_logits = torch.ones((1, config.vocab_size)) * -1e10
 
-        # compute probability of first token
-        first_probs = None
+        # TODO compute probability of first token. Missing TODO per Q6 Part 7 #80
+        first_probs = F.softmax(logits, dim=-1)
 
         for t in range(config.vocab_size):
             if logits[0, t] <= -1e10:
@@ -45,16 +45,30 @@ def temperature_scale(
 
             # TODO: compute the 1-D tensor joint_prob_t, where joint_prob_t[j] stores the joint probability of the first generated token being t and the second generated token being j
             # Don't forget to also do top-k filtering when computing probabilities for the second token
-            joint_prob_t = None
+          
+            # Compute logits for the second token given the first token
+            second_logits, _ = model(new_current_text, past=new_past)
+            second_logits = second_logits[:, -1, :]
+            second_logits = top_k_logits(second_logits, k=config.top_k) # Apply masking
+            second_probs = F.softmax(second_logits, dim=-1)
 
+            # Compute the joint probability
+            joint_prob_t = first_prob * second_probs[0]
+            
             joint_probs.append(joint_prob_t)
 
         # convert to logits
-        joint_probs = torch.cat(joint_probs, dim=0)
+        joint_probs = torch.cat(joint_probs, dim=0) 
         joint_logits = torch.log(joint_probs + 1e-10)
 
         # TODO: scale joint_logits by temperature, and compute first_logits by marginalizing out the second token dimension
-        first_logits = None
+        # Scale joint_logits by temperature
+        joint_logits = joint_logits / temperature
+        # Compute first_logits by marginalizing out the second token dimension
+        joint_logits = joint_logits.view(-1, config.vocab_size) # reshape to 2D so I can use logsumexp
+        # Marginalise second token dimension, which are columns dim=1
+        # https://pytorch.org/docs/stable/generated/torch.logsumexp.html#torch-logsumexp
+        first_logits = torch.logsumexp(joint_logits, dim=1) 
 
         return_logits[0, first_tokens] = first_logits
         return return_logits
