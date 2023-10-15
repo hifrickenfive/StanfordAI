@@ -22,7 +22,7 @@ def temperature_scale(
     if temperature_horizon == 1:
         ##TODO:
         ## Return logits scaled by the temperature parameter
-        pass
+        return logits / temperature
     elif temperature_horizon == 2:
         ## Compute the logits for all length-2 generations, and scale them by the temperature parameter
         ## Return the logits for the first generated token (by marginalizing out the second token)
