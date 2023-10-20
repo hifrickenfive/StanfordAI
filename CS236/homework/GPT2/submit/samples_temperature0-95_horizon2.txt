@@ -1,0 +1,4 @@
+================================================== SAMPLE_0 ==================================================
+Crowdsourcing has gained immense popularity in machine learning applications for obtaining large amoeba-sized datasets and for understanding the dynamics of a social network. In the coming weeks the world of Crowdsourcing will take a turn to the next level, as it will see several different tools which will help to improve performance of crowdsourced applications.
+
+In this review, we present the methods and algorithms used by Crowdsourcing to gather large data sets from a dataset and then apply them to a human-specific problem using crowdsourcing. We offer a brief overview to the methodology for
