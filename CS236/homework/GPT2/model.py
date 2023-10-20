@@ -181,8 +181,8 @@ class Transformer(nn.Module):
         self.n_embd = config.n_embd
         self.n_vocab = config.vocab_size
 
-        self.wte = nn.Embedding(config.vocab_size, config.n_embd)
-        self.wpe = nn.Embedding(config.n_positions, config.n_embd)
+        self.wte = nn.Embedding(config.vocab_size, config.n_embd) # word token embeddings
+        self.wpe = nn.Embedding(config.n_positions, config.n_embd) # positional embeddings
         block = Block(config.n_ctx, config, scale=True)
         self.h = nn.ModuleList([copy.deepcopy(block) for _ in range(config.n_layer)])
         self.ln_f = LayerNorm(config.n_embd, eps=config.layer_norm_epsilon)
