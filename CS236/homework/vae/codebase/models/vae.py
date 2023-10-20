@@ -5,9 +5,11 @@ from codebase import utils as ut
 from codebase.models import nns
 from torch import nn
 from torch.nn import functional as F
+import os
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 class VAE(nn.Module):
-    def __init__(self, nn='v1', name='vae', z_dim=2):
+    def __init__(self, nn="v1", name="vae", z_dim=2):
         super().__init__()
         self.name = name
         self.z_dim = z_dim
@@ -40,7 +42,25 @@ class VAE(nn.Module):
         #
         # Outputs should all be scalar
         ################################################################################
+        # Notes
+        # x.shape = 97, 784. Minibatch 97 imgs of 784 bits (28 x 28 pixels)
+        # z_dim = 10. This means there's 10 latent variables
+        # We know z's distribution z_prior_m, z_prior_v
+        # If sample 10 latent variables, then decode them to get a reconstructed x
+        batch_size = x.shape[0]
 
+        # Reconstruct x
+        z_prior_m_batched = torch.full((batch_size, self.z_dim), self.z_prior_m.item()) 
+        z_prior_v_batched = torch.full((batch_size, self.z_dim), self.z_prior_v.item())
+        z = ut.sample_gaussian(z_prior_m_batched, z_prior_v_batched) # 91, 10
+        reconstructed_x = self.dec(z) # 97, 784. Values are negative and positive
+        reconstructed_x_rescaled = torch.sigmoid(reconstructed_x) # Rescale values to (0,1)
+
+        # Reconstruction loss
+        rec = F.binary_cross_entropy(reconstructed_x_rescaled, x, reduction="mean")
+
+        kl = ut.kl_normal(qm, qv, pm, pv) # KL(q||p) betwen two normal dist. mean, variance
+        nelbo = rec + rec
         ################################################################################
         # End of code modification
         ################################################################################
@@ -77,12 +97,14 @@ class VAE(nn.Module):
         nelbo, kl, rec = self.negative_elbo_bound(x)
         loss = nelbo
 
-        summaries = dict((
-            ('train/loss', nelbo),
-            ('gen/elbo', -nelbo),
-            ('gen/kl_z', kl),
-            ('gen/rec', rec),
-        ))
+        summaries = dict(
+            (
+                ("train/loss", nelbo),
+                ("gen/elbo", -nelbo),
+                ("gen/kl_z", kl),
+                ("gen/rec", rec),
+            )
+        )
 
         return loss, summaries
 
@@ -97,7 +119,8 @@ class VAE(nn.Module):
     def sample_z(self, batch):
         return ut.sample_gaussian(
             self.z_prior[0].expand(batch, self.z_dim),
-            self.z_prior[1].expand(batch, self.z_dim))
+            self.z_prior[1].expand(batch, self.z_dim),
+        )
 
     def sample_x(self, batch):
         z = self.sample_z(batch)
