@@ -5,8 +5,8 @@ from codebase import utils as ut
 from codebase.models import nns
 from torch import nn
 from torch.nn import functional as F
-import os
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+# import os
+# os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 class VAE(nn.Module):
     def __init__(self, nn="v1", name="vae", z_dim=2):
@@ -53,7 +53,7 @@ class VAE(nn.Module):
         z_prior_m, z_prior_v = self.z_prior # unpacks mean and variance
         z_posterior_m, z_posterior_v = self.enc(x) # returns mean and variance. Shape 97, 10
         kl = ut.kl_normal(z_posterior_m, z_posterior_v, z_prior_m, z_prior_v) # numeric. KL >= 0
-        kl_mean = kl.mean()
+        kl = kl.mean()
 
         # Reconstruction component
         # Evaluate loss by comparing x with its reconstruction after decoding
@@ -62,12 +62,11 @@ class VAE(nn.Module):
         z = ut.sample_gaussian(z_posterior_m, z_posterior_v) # shape 97, 10
         reconstructed_x = self.dec(z) # shape 97, 784. Values are negative and positive
         reconstructed_x_rescaled = torch.sigmoid(reconstructed_x) # Rescale values to (0,1)
-        rec_mean = F.binary_cross_entropy(reconstructed_x_rescaled, x, reduction="mean")
-        rec = rec_mean
+        rec = F.binary_cross_entropy(reconstructed_x_rescaled, x, reduction="mean")
 
         # Negative ELBO
         # "Make sure to compute the average ELBO over the mini batch" PDF pg. 2/7 HW2, 2023
-        nelbo = rec_mean + kl_mean
+        nelbo = rec + kl
         ################################################################################
         # End of code modification
         ################################################################################
