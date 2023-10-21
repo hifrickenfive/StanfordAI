@@ -44,23 +44,30 @@ class VAE(nn.Module):
         ################################################################################
         # Notes
         # x.shape = 97, 784. Minibatch 97 imgs of 784 bits (28 x 28 pixels)
-        # z_dim = 10. This means there's 10 latent variables
-        # We know z's distribution z_prior_m, z_prior_v
-        # If sample 10 latent variables, then decode them to get a reconstructed x
-        batch_size = x.shape[0]
+        # z_dim = 10. There's 10 latent variables per img, x
+        # P(z)~N(z_prior_m, z_prior_v)
 
-        # Reconstruct x
-        z_prior_m_batched = torch.full((batch_size, self.z_dim), self.z_prior_m.item()) 
-        z_prior_v_batched = torch.full((batch_size, self.z_dim), self.z_prior_v.item())
-        z = ut.sample_gaussian(z_prior_m_batched, z_prior_v_batched) # 91, 10
-        reconstructed_x = self.dec(z) # 97, 784. Values are negative and positive
+        # Regularization component
+        # KL(q(z|x)|p(z))
+        # encode evaluates mean and variance params for posterior q(z|x) from neural network
+        z_prior_m, z_prior_v = self.z_prior # unpacks mean and variance
+        z_posterior_m, z_posterior_v = self.enc(x) # returns mean and variance. Shape 97, 10
+        kl = ut.kl_normal(z_posterior_m, z_posterior_v, z_prior_m, z_prior_v) # numeric. KL >= 0
+        kl_mean = kl.mean()
+
+        # Reconstruction component
+        # Evaluate loss by comparing x with its reconstruction after decoding
+        # decode evaluates a reconstructed x from latent variables, z
+        # z can be sampled from the q(z|x) distribution
+        z = ut.sample_gaussian(z_posterior_m, z_posterior_v) # shape 97, 10
+        reconstructed_x = self.dec(z) # shape 97, 784. Values are negative and positive
         reconstructed_x_rescaled = torch.sigmoid(reconstructed_x) # Rescale values to (0,1)
+        rec_mean = F.binary_cross_entropy(reconstructed_x_rescaled, x, reduction="mean")
+        rec = rec_mean
 
-        # Reconstruction loss
-        rec = F.binary_cross_entropy(reconstructed_x_rescaled, x, reduction="mean")
-
-        kl = ut.kl_normal(qm, qv, pm, pv) # KL(q||p) betwen two normal dist. mean, variance
-        nelbo = rec + rec
+        # Negative ELBO
+        # "Make sure to compute the average ELBO over the mini batch" PDF pg. 2/7 HW2, 2023
+        nelbo = rec_mean + kl_mean
         ################################################################################
         # End of code modification
         ################################################################################
