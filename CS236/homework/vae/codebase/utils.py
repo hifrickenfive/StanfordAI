@@ -8,7 +8,7 @@ import torch
 # import tensorflow as tf
 from codebase.models.gmvae import GMVAE
 from codebase.models.ssvae import SSVAE
-from codebase.models.vae import VAE
+from codebase.models.vae import VAE # Comment out for plotting to work
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 
@@ -75,7 +75,8 @@ def log_normal(x, m, v):
     # Compute element-wise log probability of normal and remember to sum over
     # the last dimension
     ################################################################################
-
+    element_wise = -0.5 * (torch.log(v) + (x - m).pow(2) / v + np.log(2 * np.pi))
+    log_prob = element_wise.sum(-1)
     ################################################################################
     # End of code modification
     ################################################################################
@@ -99,7 +100,9 @@ def log_normal_mixture(z, m, v):
     # Compute the uniformly-weighted mixture of Gaussians density for each sample
     # in the batch
     ################################################################################
-
+    z = z.unsqueeze(1)
+    log_prob = log_normal(z, m, v)
+    log_prob = log_mean_exp(log_prob , dim=1)
     ################################################################################
     # End of code modification
     ################################################################################

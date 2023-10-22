@@ -47,26 +47,35 @@ class VAE(nn.Module):
         # z_dim = 10. There's 10 latent variables per img, x
         # P(z)~N(z_prior_m, z_prior_v)
 
-        # Regularization component
-        # KL(q(z|x)|p(z))
-        # encode evaluates mean and variance params for posterior q(z|x) from neural network
-        z_prior_m, z_prior_v = self.z_prior # unpacks mean and variance
-        z_posterior_m, z_posterior_v = self.enc(x) # returns mean and variance. Shape 97, 10
-        kl = ut.kl_normal(z_posterior_m, z_posterior_v, z_prior_m, z_prior_v) # numeric. KL >= 0
-        kl = kl.mean()
+        # # Regularization component
+        # # KL(q(z|x)|p(z))
+        # # encode evaluates mean and variance params for posterior q(z|x) from neural network
+        # z_prior_m, z_prior_v = self.z_prior # unpacks mean and variance
+        # z_posterior_m, z_posterior_v = self.enc(x) # returns mean and variance. Shape 97, 10
+        # kl = ut.kl_normal(z_posterior_m, z_posterior_v, z_prior_m, z_prior_v) # numeric. KL >= 0
+        # kl = kl.mean()
 
-        # Reconstruction component
-        # Evaluate loss by comparing x with its reconstruction after decoding
-        # decode evaluates a reconstructed x from latent variables, z
-        # z can be sampled from the q(z|x) distribution
-        z = ut.sample_gaussian(z_posterior_m, z_posterior_v) # shape 97, 10
-        reconstructed_x = self.dec(z) # shape 97, 784. Values are negative and positive
-        reconstructed_x_rescaled = torch.sigmoid(reconstructed_x) # Rescale values to (0,1)
-        rec = F.binary_cross_entropy(reconstructed_x_rescaled, x, reduction="mean")
+        # # Reconstruction component
+        # # Evaluate loss by comparing x with its reconstruction after decoding
+        # # decode evaluates a reconstructed x from latent variables, z
+        # # z can be sampled from the q(z|x) distribution
+        # z = ut.sample_gaussian(z_posterior_m, z_posterior_v) # shape 97, 10
+        # reconstructed_x = self.dec(z) # shape 97, 784. Values are negative and positive
+        # reconstructed_x_rescaled = torch.sigmoid(reconstructed_x) # Rescale values to (0,1)
+        # rec = F.binary_cross_entropy(reconstructed_x_rescaled, x, reduction="mean")
 
-        # Negative ELBO
-        # "Make sure to compute the average ELBO over the mini batch" PDF pg. 2/7 HW2, 2023
-        nelbo = rec + kl
+        # # Negative ELBO
+        # # "Make sure to compute the average ELBO over the mini batch" PDF pg. 2/7 HW2, 2023
+        # nelbo = rec + kl
+
+        m, v = self.enc(x)
+        z = ut.sample_gaussian(m, v)
+        logits = self.dec(z)
+        kl = ut.kl_normal(m, v, self.z_prior[0], self.z_prior[1])
+        rec = -ut.log_bernoulli_with_logits(x, logits)
+        nelbo = kl + rec
+        nelbo , kl , rec = nelbo.mean(), kl.mean(), rec.mean()
+
         ################################################################################
         # End of code modification
         ################################################################################
@@ -93,7 +102,21 @@ class VAE(nn.Module):
         #
         # Outputs should all be scalar
         ################################################################################
+        m, v = self.enc(x)
+        
+        # Duplicate
+        m = ut.duplicate(m, iw)
+        v = ut.duplicate(v, iw)
+        x = ut.duplicate(x, iw)
+        z = ut. sample_gaussian(m, v)
+        logits = self.dec(z)
+        kl = ut.log_normal(z, m, v) - ut.log_normal(z, self.z_prior[0], self.z_prior[1])
 
+        rec = -ut. log_bernoulli_with_logits(x, logits)
+
+        nelbo = kl + rec
+        niwae = -ut.log_mean_exp(-nelbo.reshape(iw, -1), dim=0)
+        niwae, kl, rec = niwae.mean(), kl.mean(), rec.mean()
         ################################################################################
         # End of code modification
         ################################################################################

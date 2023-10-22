@@ -48,8 +48,24 @@ class GMVAE(nn.Module):
         ################################################################################
         # We provide the learnable prior for you. Familiarize yourself with
         # this object by checking its shape.
-        prior = ut.gaussian_parameters(self.z_pre, dim=1)
+        
+        # Get prior p(z) params
+        prior = ut.gaussian_parameters(self.z_pre, dim=1) 
+        m_prior, v_prior = prior # unpack
 
+        # Get posterior p(z|x) params
+        m_post, v_post = self.enc(x)
+
+        # Reconstruction loss
+        z = ut.sample_gaussian(m_post, v_post)
+        logits = self.dec(z)
+        rec = -ut.log_bernoulli_with_logits(x, logits)
+
+        # Regularization KL(q(z|x)||p(z))
+        kl = ut.log_normal(z, m_post, v_post) - ut.log_normal_mixture(z, m_prior, v_prior)
+
+        nelbo = kl + rec
+        nelbo , kl , rec = nelbo.mean(), kl.mean(), rec.mean()
         ################################################################################
         # End of code modification
         ################################################################################
