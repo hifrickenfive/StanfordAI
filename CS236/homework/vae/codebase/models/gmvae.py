@@ -96,6 +96,20 @@ class GMVAE(nn.Module):
         # this object by checking its shape.
         prior = ut.gaussian_parameters(self.z_pre, dim=1)
 
+        m, v = self.enc(x)
+        m = ut.duplicate(m, iw)
+        v = ut.duplicate(v, iw)
+        x = ut.duplicate(x, iw)
+
+        z = ut. sample_gaussian(m, v)
+        logits = self.dec.decode(z)
+        kl = ut.log_normal(z, m, v) - ut.log_normal_mixture(z, *prior)
+        rec = -ut.log_bernoulli_with_logits(x, logits)
+
+        nelbo = kl + rec
+
+        niwae = -ut.log_mean_exp(-nelbo.reshape(iw, -1), dim=0)
+        niwae, kl, rec = niwae.mean(), kl.mean(), rec.mean()
         ################################################################################
         # End of code modification
         ################################################################################
