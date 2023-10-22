@@ -36,7 +36,12 @@ class FSVAE(nn.Module):
         #
         # Outputs should all be scalar
         ################################################################################
-
+        m, v = self.enc(x, y)
+        z = ut. sample_gaussian(m, v)
+        x_mean = self.dec(z, y)
+        kl_z = ut.kl_normal(m, v, self.z_prior[0], self.z_prior[1]).mean()
+        rec = -ut.log_normal(x, x_mean, 0.1 * torch.ones_like(x_mean)).mean()
+        nelbo = kl_z + rec
         ################################################################################
         # End of code modification
         ################################################################################

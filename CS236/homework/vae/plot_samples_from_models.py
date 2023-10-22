@@ -1,6 +1,7 @@
 import torch
 from codebase.models.vae import VAE
 from codebase.models.gmvae import GMVAE
+from codebase.models.fsvae import FSVAE
 from codebase.models.ssvae import SSVAE
 import matplotlib.pyplot as plt
 import os
@@ -28,15 +29,27 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 num_samples = 200
 latent_dim = 10
 num_checkpoint = 20000
-model_choice = 'GMVAE'  # choices are 'VAE', 'GMVAE', 'SSVAE'
-run_ID = '0000'
+model_choice = 'FSVAE'  # choices are 'VAE', 'GMVAE', 'FSVAE'
 
 if model_choice == 'VAE':
+    run_ID = '0002'
     model_name = "model=vae_z=10_run=" + run_ID
     model = VAE(z_dim=latent_dim, name=model_name).to(device)
 elif model_choice == 'GMVAE':
+    run_ID = '0000'
     model_name = "model=gmvae_z=10_k=500_run=" + run_ID
     model = GMVAE(z_dim=latent_dim, name=model_name).to(device)
+elif model_choice == 'SSVAE_no_ELBO':
+    run_ID = '0000' # No ELBO
+    model_name = "model=ssvae_gw=000_cw=100_run=" + run_ID
+    model = SSVAE(z_dim=latent_dim, name=model_name).to(device)
+elif model_choice == 'SSVAE':
+    run_ID = '0000' # ELBO
+    model_name = "model=ssvae_gw=001_cw=100_run=" + run_ID
+    model = SSVAE(z_dim=latent_dim, name=model_name).to(device)
+elif model_choice == 'FSVAE':
+    model_name = "model=fsvae_run=" + run_ID
+    model = FSVAE(name=model_name).to(device)
 
 # Load model
 load_model_by_name(model, num_checkpoint, device=device)

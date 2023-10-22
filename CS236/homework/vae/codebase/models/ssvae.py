@@ -61,6 +61,18 @@ class SSVAE(nn.Module):
         y = x.new(np.eye(self.y_dim)[y])
         x = ut.duplicate(x, self.y_dim)
 
+        m, v = self.enc(x, y)
+        z = ut. sample_gaussian(m, v)
+        x_logits = self.dec(z, y)
+        kl_y = ut.kl_cat(y_prob, y_logprob, np.log(1.0 / self.y_dim))
+        kl_z = ut.kl_normal(m, v, self.z_prior[0], self.z_prior[1])
+        rec = -ut. log_bernoulli_with_logits(x, x_logits)
+
+        rec = (y_prob.t() * rec.reshape(self.y_dim, -1)).sum(0)
+        kl_z = (y_prob.t() * kl_z.reshape(self.y_dim, -1)).sum(0)
+
+        kl_y, kl_z , rec = kl_y.mean(), kl_z.mean(), rec.mean()
+        nelbo = rec + kl_z + kl_y
         ################################################################################
         # End of code modification
         ################################################################################
