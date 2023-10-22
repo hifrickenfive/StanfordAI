@@ -102,7 +102,7 @@ class GMVAE(nn.Module):
         x = ut.duplicate(x, iw)
 
         z = ut. sample_gaussian(m, v)
-        logits = self.dec.decode(z)
+        logits = self.dec(z)
         kl = ut.log_normal(z, m, v) - ut.log_normal_mixture(z, *prior)
         rec = -ut.log_bernoulli_with_logits(x, logits)
 
