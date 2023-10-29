@@ -51,27 +51,46 @@ class SSVAE(nn.Module):
         #
         # Outputs should all be scalar
         ################################################################################
+        # Get predicted y labels
         y_logits = self.cls(x)
-        y_logprob = F.log_softmax(y_logits, dim=1)
-        y_prob = torch.softmax(y_logprob, dim=1) # (batch, y_dim)
+        y_log_prob = F.log_softmax(y_logits, dim=1)
+        y_prob = torch.softmax(y_log_prob, dim=1) # (batch, y_dim)
 
-        # Duplicate y based on x's batch size. Then duplicate x
-        # This enumerates all possible combination of x with labels (0, 1, ..., 9)
-        y = np.repeat(np.arange(self.y_dim), x.size(0))
-        y = x.new(np.eye(self.y_dim)[y])
-        x = ut.duplicate(x, self.y_dim)
+        # Modify x and z tensors
+        # Treat each possible label for each datapoint as a separate instance i.e. x.size x num y labels
+        # Then weight each instance with the model's predicted probability
+        # Expectation[ELBO(x,y)] 
+        num_y_labels = self.y_dim # 10
+        batch_size = x.shape[0] # 97
+        y = torch.arange(num_y_labels).repeat_interleave(batch_size)
+        y = F.one_hot(y, num_y_labels).to(dtype=x.dtype, device=x.device)
+        x = ut.duplicate(x, num_y_labels)
 
-        m, v = self.enc(x, y)
-        z = ut. sample_gaussian(m, v)
+        # Get reconstructed x
+        mean_post, variance_post = self.enc(x, y)
+        z = ut.sample_gaussian(mean_post, variance_post)
         x_logits = self.dec(z, y)
-        kl_y = ut.kl_cat(y_prob, y_logprob, np.log(1.0 / self.y_dim))
-        kl_z = ut.kl_normal(m, v, self.z_prior[0], self.z_prior[1])
-        rec = -ut. log_bernoulli_with_logits(x, x_logits)
 
-        rec = (y_prob.t() * rec.reshape(self.y_dim, -1)).sum(0)
-        kl_z = (y_prob.t() * kl_z.reshape(self.y_dim, -1)).sum(0)
+        # Evaluate kl_y, kl_z, rec
+        mean_prior, variance_prior = self.z_prior
+        uniform_dist_over_classes = np.log(1.0 / num_y_labels)
+        kl_y = ut.kl_cat(y_prob, y_log_prob, uniform_dist_over_classes)
+        kl_z = ut.kl_normal(mean_post, variance_post, mean_prior, variance_prior)
+        rec = -ut.log_bernoulli_with_logits(x, x_logits)
 
-        kl_y, kl_z , rec = kl_y.mean(), kl_z.mean(), rec.mean()
+        # Reshape the reconstruction loss and KL divergence to match y_prob dimensions
+        rec_reshaped = rec.reshape(self.y_dim, -1)
+        kl_z_reshaped = kl_z.reshape(self.y_dim, -1)
+
+        # Weight the losses by the predicted class probabilities
+        weighted_rec = y_prob.t() * rec_reshaped
+        weighted_kl_z = y_prob.t() * kl_z_reshaped
+
+        # Sum the weighted losses to get the expected values
+        expected_rec = weighted_rec.sum(0)
+        expected_kl_z = weighted_kl_z.sum(0)
+
+        kl_y, kl_z , rec = kl_y.mean(), expected_kl_z.mean(), expected_rec.mean()
         nelbo = rec + kl_z + kl_y
         ################################################################################
         # End of code modification
