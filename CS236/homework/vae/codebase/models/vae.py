@@ -47,35 +47,22 @@ class VAE(nn.Module):
         # z_dim = 10. There's 10 latent variables per img, x
         # P(z)~N(z_prior_m, z_prior_v)
 
-        # # Regularization component
-        # # KL(q(z|x)|p(z))
-        # # encode evaluates mean and variance params for posterior q(z|x) from neural network
-        # z_prior_m, z_prior_v = self.z_prior # unpacks mean and variance
-        # z_posterior_m, z_posterior_v = self.enc(x) # returns mean and variance. Shape 97, 10
-        # kl = ut.kl_normal(z_posterior_m, z_posterior_v, z_prior_m, z_prior_v) # numeric. KL >= 0
-        # kl = kl.mean()
+        # Sample latent variables
+        mean_post, variance_post = self.enc(x)
+        z = ut.sample_gaussian(mean_post, variance_post) # shape 97, 10
 
-        # # Reconstruction component
-        # # Evaluate loss by comparing x with its reconstruction after decoding
-        # # decode evaluates a reconstructed x from latent variables, z
-        # # z can be sampled from the q(z|x) distribution
-        # z = ut.sample_gaussian(z_posterior_m, z_posterior_v) # shape 97, 10
-        # reconstructed_x = self.dec(z) # shape 97, 784. Values are negative and positive
-        # reconstructed_x_rescaled = torch.sigmoid(reconstructed_x) # Rescale values to (0,1)
-        # rec = F.binary_cross_entropy(reconstructed_x_rescaled, x, reduction="mean")
-
-        # # Negative ELBO
-        # # "Make sure to compute the average ELBO over the mini batch" PDF pg. 2/7 HW2, 2023
-        # nelbo = rec + kl
-
-        m, v = self.enc(x)
-        z = ut.sample_gaussian(m, v)
+        # Reconstruction loss
         logits = self.dec(z)
-        kl = ut.kl_normal(m, v, self.z_prior[0], self.z_prior[1])
         rec = -ut.log_bernoulli_with_logits(x, logits)
+
+        # Regularization penality via KL(posterior|prior)
+        mean_prior, variance_prior = self.z_prior
+        kl = ut.kl_normal(mean_post, variance_post, mean_prior, variance_prior)
+   
+        # Negative ELBO
+        # "Make sure to compute the average ELBO over the mini batch" PDF pg. 2/7 HW2, 2023
         nelbo = kl + rec
         nelbo , kl , rec = nelbo.mean(), kl.mean(), rec.mean()
-
         ################################################################################
         # End of code modification
         ################################################################################
@@ -102,18 +89,27 @@ class VAE(nn.Module):
         #
         # Outputs should all be scalar
         ################################################################################
-        m, v = self.enc(x)
+        # Sample latent variables via IWAE
+        mean_post, variance_post = self.enc(x)
         
         # Duplicate
-        m = ut.duplicate(m, iw)
-        v = ut.duplicate(v, iw)
+        mean_post = ut.duplicate(mean_post, iw)
+        variance_post = ut.duplicate(variance_post, iw)
         x = ut.duplicate(x, iw)
-        z = ut. sample_gaussian(m, v)
+
+        # Reconstruct x
+        z = ut.sample_gaussian(mean_post, variance_post)
         logits = self.dec(z)
-        kl = ut.log_normal(z, m, v) - ut.log_normal(z, self.z_prior[0], self.z_prior[1])
+        
+        # Reconstruction loss
+        rec = -ut.log_bernoulli_with_logits(x, logits)
 
-        rec = -ut. log_bernoulli_with_logits(x, logits)
-
+        # Regularization penalty
+        mean_prior, variance_prior = self.z_prior
+        kl = ut.log_normal(z, mean_post, variance_post) - ut.log_normal(z, mean_prior, variance_prior)
+ 
+        # NELBO
+        # Don't forget to find the mean over the batch!
         nelbo = kl + rec
         niwae = -ut.log_mean_exp(-nelbo.reshape(iw, -1), dim=0)
         niwae, kl, rec = niwae.mean(), kl.mean(), rec.mean()
