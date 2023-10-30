@@ -96,20 +96,28 @@ class GMVAE(nn.Module):
         ################################################################################
         # We provide the learnable prior for you. Familiarize yourself with
         # this object by checking its shape.
-        prior = ut.gaussian_parameters(self.z_pre, dim=1)
 
-        m, v = self.enc(x)
-        m = ut.duplicate(m, iw)
-        v = ut.duplicate(v, iw)
+        # Sample latent variables via IWAE
+        mean_post, variance_post = self.enc(x)
+
+        # Duplicate
+        mean_post = ut.duplicate(mean_post, iw)
+        variance_post = ut.duplicate(variance_post, iw)
         x = ut.duplicate(x, iw)
 
-        z = ut. sample_gaussian(m, v)
+        # Reconstruct x
+        z = ut. sample_gaussian(mean_post, variance_post)
         logits = self.dec(z)
-        kl = ut.log_normal(z, m, v) - ut.log_normal_mixture(z, *prior)
+
+        # Reconstruction loss
         rec = -ut.log_bernoulli_with_logits(x, logits)
-
+        
+        # Regularization penalty
+        prior = ut.gaussian_parameters(self.z_pre, dim=1)
+        kl = ut.log_normal(z, mean_post, variance_post) - ut.log_normal_mixture(z, *prior)
+  
+        # NELBO
         nelbo = kl + rec
-
         niwae = -ut.log_mean_exp(-nelbo.reshape(iw, -1), dim=0)
         niwae, kl, rec = niwae.mean(), kl.mean(), rec.mean()
         ################################################################################
