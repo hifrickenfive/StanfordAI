@@ -98,7 +98,7 @@ class MADE(nn.Module):
         # Assuming the network outputs mu and log sigma (alpha) concatenated together
         mu, log_sigma = network_output.chunk(2, dim=1) 
         x = mu + torch.exp(log_sigma) * z
-        log_det = torch.sum(log_sigma, dim=1)
+        log_det = - torch.sum(log_sigma, dim=1)
         # YOUR CODE ENDS HERE
 
         return x, log_det
@@ -112,10 +112,9 @@ class MADE(nn.Module):
         # YOUR CODE STARTS HERE
         network_output = self.net(x)
         mu, log_sigma = network_output.chunk(2, dim=1)
-        z = (x - mu) * torch.exp(-log_sigma)
+        z = (x - mu) / torch.exp(log_sigma)
         log_det = -torch.sum(log_sigma, dim=1)
         # YOUR CODE ENDS HERE
-
         return z, log_det
 
 
@@ -148,11 +147,20 @@ class MAF(nn.Module):
         """
         # YOUR CODE STARTS HERE
         log_prob = torch.zeros(x.size(0), device=x.device)
-        z = x
+        z_prev = x
         log_det_jacobian = 0
         for flow in self.nf:
-            z, log_det = flow.inverse(z)
-            log_det_jacobian += log_det
+            z, log_det = flow.inverse(z_prev)
+            # print(self.base_dist.log_prob(z).sum(dim=1))
+
+            if torch.isnan(z).any():
+                print('Nan detected in z')
+                z, __ = flow.inverse(z_prev)
+
+            if type(flow) != PermuteLayer: # log_det's shape after a permute layer is [100,1] and all zeros so skip
+                log_det_jacobian += log_det
+
+            z_prev = z
 
         # Evaluate the log probability of the base distribution
         log_prob_base_dist = self.base_dist.log_prob(z).sum(dim=1)
