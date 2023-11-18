@@ -93,7 +93,12 @@ class MADE(nn.Module):
         x = torch.zeros_like(z)
 
         # YOUR CODE STARTS HERE
-        raise NotImplementedError
+        network_output = self.net(z)
+         # Split the network output into mu and alpha parts
+        # Assuming the network outputs mu and log sigma (alpha) concatenated together
+        mu, log_sigma = network_output.chunk(2, dim=1) 
+        x = mu + torch.exp(log_sigma) * z
+        log_det = torch.sum(log_sigma, dim=1)
         # YOUR CODE ENDS HERE
 
         return x, log_det
@@ -105,7 +110,10 @@ class MADE(nn.Module):
         :return: (z, log_det). log_det should be 1-D (batch_dim,)
         """
         # YOUR CODE STARTS HERE
-        raise NotImplementedError
+        network_output = self.net(x)
+        mu, log_sigma = network_output.chunk(2, dim=1)
+        z = (x - mu) * torch.exp(-log_sigma)
+        log_det = -torch.sum(log_sigma, dim=1)
         # YOUR CODE ENDS HERE
 
         return z, log_det
@@ -139,7 +147,20 @@ class MAF(nn.Module):
         :return: log_prob. This should be a Python scalar.
         """
         # YOUR CODE STARTS HERE
-        raise NotImplementedError
+        log_prob = torch.zeros(x.size(0), device=x.device)
+        z = x
+        log_det_jacobian = 0
+        for flow in self.nf:
+            z, log_det = flow.inverse(z)
+            log_det_jacobian += log_det
+
+        # Evaluate the log probability of the base distribution
+        log_prob_base_dist = self.base_dist.log_prob(z).sum(dim=1)
+
+        # Combine the log probability of the base distribution with the log determinant
+        # of the Jacobian to get the final log probability
+        log_prob += log_prob_base_dist + log_det_jacobian
+        log_prob = log_prob.sum()
         # YOUR CODE ENDS HERE
 
         return log_prob
