@@ -64,11 +64,13 @@ def temperature_scale(
         # TODO: scale joint_logits by temperature, and compute first_logits by marginalizing out the second token dimension
         # Scale joint_logits by temperature
         joint_logits = joint_logits / temperature
-        # Compute first_logits by marginalizing out the second token dimension
         joint_logits = joint_logits.view(-1, config.vocab_size) # reshape to 2D so I can use logsumexp
-        # Marginalise second token dimension, which are columns dim=1
-        # https://pytorch.org/docs/stable/generated/torch.logsumexp.html#torch-logsumexp
         first_logits = torch.logsumexp(joint_logits, dim=1) 
+
+        sol_joint_logits = joint_logits / temperature
+        sol_first_logits = torch.logsumexp(joint_logits , dim=-1)
+
+        print(sol_first_logits == first_logits)
 
         return_logits[0, first_tokens] = first_logits
         return return_logits

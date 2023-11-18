@@ -20,7 +20,7 @@ def load_model_by_name(model, global_step, device=None):
     file_path = os.path.join(
         "checkpoints", model.name, "model-{:05d}.pt".format(global_step)
     )
-    state = torch.load("C://data//StanfordAI//CS236//homework//vae//checkpoints//model=fsvae_run=0001//model-1000000.pt", map_location=device)
+    state = torch.load("C://data//StanfordAI//CS236//homework//vae//checkpoints//model=fsvae_run=0002//model-20000.pt", map_location=device)
     model.load_state_dict(state)
     print("Loaded from {}".format(file_path))
 
