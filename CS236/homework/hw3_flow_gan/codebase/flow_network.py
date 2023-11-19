@@ -90,8 +90,6 @@ class MADE(nn.Module):
         :param z: Input noise of size (batch_size, self.input_size)
         :return: (x, log_det). log_det should be 1-D (batch_dim,)
         """
-        x = torch.zeros_like(z)
-
         # YOUR CODE STARTS HERE
         network_output = self.net(z)
          # Split the network output into mu and alpha parts
@@ -146,7 +144,6 @@ class MAF(nn.Module):
         :return: log_prob. This should be a Python scalar.
         """
         # YOUR CODE STARTS HERE
-        log_prob = torch.zeros(x.size(0), device=x.device)
         z_prev = x
         log_det_jacobian = 0
         for flow in self.nf:
@@ -167,8 +164,7 @@ class MAF(nn.Module):
 
         # Combine the log probability of the base distribution with the log determinant
         # of the Jacobian to get the final log probability
-        log_prob += log_prob_base_dist + log_det_jacobian
-        log_prob = log_prob.sum()
+        log_prob = (log_prob_base_dist + log_det_jacobian).sum() / x.size(0)
         # YOUR CODE ENDS HERE
 
         return log_prob
