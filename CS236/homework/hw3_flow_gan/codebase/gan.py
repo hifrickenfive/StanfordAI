@@ -70,7 +70,8 @@ def conditional_loss_nonsaturating_d(g, d, x_real, y_real, *, device):
     y_fake = y_real  # use the real labels as the fake labels as well
 
     # YOUR DISCRIMINATOR STARTS HERE
-    raise NotImplementedError
+    x_generated = g(z, y_real)
+     d_loss = -F.logsigmoid(d(x_real, y_real)).mean() - F.logsigmoid(1-d(x_generated, y_real)).mean()
     # YOUR CODE ENDS HERE
 
     return d_loss
@@ -94,7 +95,8 @@ def conditional_loss_nonsaturating_g(g, d, x_real, y_real, *, device):
     y_fake = y_real  # use the real labels as the fake labels as well
 
     # YOUR DISCRIMINATOR STARTS HERE
-    raise NotImplementedError
+    x_generated = g(z, y_real)
+    g_loss = -F.logsigmoid(d(x_generated, y_real)).mean()
     # YOUR CODE ENDS HERE
 
     return g_loss
