@@ -20,7 +20,8 @@ def loss_nonsaturating_d(g, d, x_real, *, device):
     # YOUR DISCRIMINATOR CODE STARTS HERE
     # You may find some or all of the below useful:
     #   - F.binary_cross_entropy_with_logits
-    raise NotImplementedError
+    x_generated = g(z)
+    d_loss = -F.logsigmoid(d(x_real)).mean() - F.logsigmoid(1-d(x_generated)).mean()
     # YOUR CODE ENDS HERE
 
     return d_loss
@@ -43,7 +44,9 @@ def loss_nonsaturating_g(g, d, x_real, *, device):
     # YOUR GENERATOR CODE STARTS HERE
     # You may find some or all of the below useful:
     #   - F.logsigmoid
-    raise NotImplementedError
+    x_generated = g(z)
+    d_fake = d(x_generated)
+    g_loss = -F.logsigmoid(d_fake).mean()
     # YOUR CODE ENDS HERE
 
     return g_loss
