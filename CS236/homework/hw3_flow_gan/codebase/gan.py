@@ -127,10 +127,19 @@ def loss_wasserstein_gp_d(g, d, x_real, *, device):
     alpha = torch.rand(batch_size, 1, 1, 1, device=device)
     x_sampled_from_r_theta = alpha * x_generated + (1 - alpha) * x_real
 
-    grad = torch.autograd.grad(d(x_sampled_from_r_theta).sum(), x_sampled_from_r_theta, create_graph=True)
+    grad = torch.autograd.grad(
+        d(x_sampled_from_r_theta).sum(),
+        x_sampled_from_r_theta,
+        create_graph=True
+    )
+    
     grad_norm = grad[0].reshape(batch_size, -1).norm(dim=1)
 
-    d_loss = d(x_generated).mean() - d(x_real).mean() + penalty*((grad_norm - 1)**2).mean()
+    d_loss = (
+      d(x_generated).mean() -
+      d(x_real).mean() + 
+      penalty*((grad_norm - 1)**2).mean()
+    )
     # YOUR CODE ENDS HERE
 
     return d_loss
