@@ -100,7 +100,7 @@ class MADE(nn.Module):
 
         # Attempt 2
         x = z
-        for i in range(2):
+        for i in range(x.shape[1]):
             network_output = self.net(x)
             mu, log_sigma = network_output.chunk(2, dim=1)
             x = mu + torch.exp(log_sigma) * z
