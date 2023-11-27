@@ -91,13 +91,21 @@ class MADE(nn.Module):
         :return: (x, log_det). log_det should be 1-D (batch_dim,)
         """
         # YOUR CODE STARTS HERE
-        network_output = self.net(z)
-         # Split the network output into mu and alpha parts
-        # Assuming the network outputs mu and log sigma (alpha) concatenated together
-        mu, log_sigma = network_output.chunk(2, dim=1) 
-        x = mu + torch.exp(log_sigma) * z
+
+        # My baseline, which autograder declared as incorrect
+        # network_output = self.net(z)
+        # mu, log_sigma = network_output.chunk(2, dim=1)
+        # x = mu + torch.exp(log_sigma) * z
+        # log_det = - torch.sum(log_sigma, dim=1)
+
+        # Attempt 2
+        x = z
+        for i in range(2):
+            network_output = self.net(x)
+            mu, log_sigma = network_output.chunk(2, dim=1)
+            x = mu + torch.exp(log_sigma) * z
+
         log_det = - torch.sum(log_sigma, dim=1)
-        # YOUR CODE ENDS HERE
 
         return x, log_det
 
