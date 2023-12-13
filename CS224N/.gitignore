@@ -2,7 +2,7 @@
 *ubyte*
 *.bin
 *scratch*
-\.vscode
+.vscode\
 *.mat
 *solutions*
 *Solutions*
