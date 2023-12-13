@@ -1,3 +1,3 @@
-[submodule "CS244N/minbert-default-final-project"]
-	path = CS244N/minbert-default-final-project
+[submodule "CS224N/minbert-default-final-project"]
+	path = CS224N/minbert-default-final-project
 	url = https://github.com/gpoesia/minbert-default-final-project
