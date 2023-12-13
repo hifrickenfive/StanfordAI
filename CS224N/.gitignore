@@ -1,0 +1,11 @@
+*.pt
+*ubyte*
+*.bin
+*scratch*
+\.vscode
+*.mat
+*solutions*
+*Solutions*
+*.zip
+papers/
+scratch/
