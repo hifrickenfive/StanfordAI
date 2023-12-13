@@ -1,9 +1,12 @@
 # Folders
 CS221/Solutions
 CS229/Solutions
+*.vscode/*
 
 #Files
 glove.6B.100d.txt
+*sol*
+*Sol*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
